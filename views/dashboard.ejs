@@ -8,5 +8,8 @@
     <h1>Dashboard</h1>
     <p>Welcome to the USAF Dashboard!</p>
     <p>Rank: <strong><%= highestRole ? highestRole : 'No role assigned' %></strong></p>
+    <% if (highestRole) { %>
+        <img src="/images/<%= highestRole.toLowerCase().replace(/\s+/g, '-') %>.png" alt="<%= highestRole %> icon" style="width: 20px; height: 20px;">
+    <% } %>
 </body>
 </html>
