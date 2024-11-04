@@ -14,23 +14,24 @@ function setSessionRoles(req) {
         ];
 
         // Log all roles from the user object
-        console.log(`All roles for user ${req.user.username}: ${req.user.roles.join(', ')}`);
+        console.log(`All roles for user ${req.user.username}: ${req.user.roles.map(role => role.name).join(', ')}`);
 
         // Filter out excluded roles
-        const userRoles = req.user.roles.filter(role => !excludedRoles.includes(role));
+        const userRoles = req.user.roles.filter(role => !excludedRoles.includes(role.name));
 
         // Log filtered roles
-        console.log(`Filtered roles for user ${req.user.username}: ${userRoles.join(', ')}`);
+        console.log(`Filtered roles for user ${req.user.username}: ${userRoles.map(role => role.name).join(', ')}`);
 
         // Determine the highest role
         const highestRole = userRoles.length > 0 ? userRoles[0] : null; // Assuming roles are ordered by importance
 
         // Store roles and highest role in session
         req.session.roles = userRoles;
-        req.session.highestRole = highestRole;
+        req.session.highestRole = highestRole ? highestRole.name : null;
+        req.session.highestRoleId = highestRole ? highestRole.id : null;
 
         // Console log the highest role
-        console.log(`Highest role for user ${req.user.username}: ${highestRole}`);
+        console.log(`Highest role for user ${req.user.username}: ${req.session.highestRole}`);
     }
 }
 
@@ -48,7 +49,7 @@ router.post('/login', async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ username }).populate('roles');
 
         if (!user) {
             // No user found with the given username
@@ -89,8 +90,19 @@ router.get('/dashboard', (req, res) => {
     if (!req.isAuthenticated()) {
         return res.redirect('/login');
     }
+
+    // Define a mapping from role IDs to image filenames
+    const roleImageMap = {
+        '1302347816496271472': 'first-sergeant1.png',
+        '1302347762687414394': 'first-sergeant2.png',
+        '1302347657372504104': 'first-sergeant3.png',
+        // Add other role IDs and their corresponding images here
+    };
+
     res.render('dashboard', {
-        highestRole: req.session.highestRole || 'No role assigned'
+        highestRole: req.session.highestRole || 'No role assigned',
+        roleImageMap: roleImageMap,
+        highestRoleId: req.session.highestRoleId
     });
 });
 
