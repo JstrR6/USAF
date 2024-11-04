@@ -4,6 +4,36 @@ const bcrypt = require('bcrypt');
 const User = require('./models/user');
 const router = express.Router();
 
+// Middleware to set session roles and highest role
+function setSessionRoles(req) {
+    if (req.isAuthenticated()) {
+        const excludedRoles = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted Airmen'
+        ];
+
+        // Log all roles from the user object
+        console.log(`All roles for user ${req.user.username}: ${req.user.roles.join(', ')}`);
+
+        // Filter out excluded roles
+        const userRoles = req.user.roles.filter(role => !excludedRoles.includes(role));
+
+        // Log filtered roles
+        console.log(`Filtered roles for user ${req.user.username}: ${userRoles.join(', ')}`);
+
+        // Determine the highest role
+        const highestRole = userRoles.length > 0 ? userRoles[0] : null; // Assuming roles are ordered by importance
+
+        // Store roles and highest role in session
+        req.session.roles = userRoles;
+        req.session.highestRole = highestRole;
+
+        // Console log the highest role
+        console.log(`Highest role for user ${req.user.username}: ${highestRole}`);
+    }
+}
+
 router.get('/', (req, res) => {
     res.render('login'); // Render the login.ejs view
 });
@@ -42,6 +72,10 @@ router.post('/login', async (req, res, next) => {
         // Authenticate user
         req.login(user, (err) => {
             if (err) return next(err);
+
+            // Set session roles and highest role
+            setSessionRoles(req);
+
             return res.redirect('/dashboard');
         });
 
@@ -59,7 +93,6 @@ router.get('/dashboard', (req, res) => {
         highestRole: req.session.highestRole || 'No role assigned'
     });
 });
-
 
 // Render forms page
 router.get('/forms', (req, res) => {
