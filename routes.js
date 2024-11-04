@@ -55,8 +55,11 @@ router.get('/dashboard', (req, res) => {
     if (!req.isAuthenticated()) {
         return res.redirect('/login');
     }
-    res.render('dashboard');
+    res.render('dashboard', {
+        highestRole: req.session.highestRole || 'No role assigned'
+    });
 });
+
 
 // Render forms page
 router.get('/forms', (req, res) => {
