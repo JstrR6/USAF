@@ -120,7 +120,9 @@ router.get('/logout', (req, res, next) => {
 // Render dashboard page
 router.get('/dashboard', isAuthenticated, (req, res) => {
     res.render('dashboard', {
-        title: 'Dashboard'
+        title: 'Dashboard',
+        user: req.user,
+        highestRole: req.session.highestRole || 'No role assigned'
     });
 });
 

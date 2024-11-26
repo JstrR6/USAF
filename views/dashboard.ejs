@@ -1,28 +1,41 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     <!-- Welcome Card -->
     <div class="bg-white rounded-lg shadow p-4">
-        <h2 class="text-xl font-semibold mb-4">Welcome, <%= user.username %></h2>
-        <div class="flex items-center mb-4">
-            <div>
-                <p class="text-gray-600">Current Rank</p>
-                <p class="font-semibold"><%= highestRole %></p>
+        <% if (locals.user) { %>
+            <h2 class="text-xl font-semibold mb-4">Welcome, <%= locals.user.username %></h2>
+            <div class="flex items-center mb-4">
+                <div>
+                    <p class="text-gray-600">Current Rank</p>
+                    <p class="font-semibold"><%= locals.highestRole %></p>
+                </div>
             </div>
-        </div>
-        <div class="mt-4">
-            <p class="text-gray-600">XP Progress</p>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <%
-                    const xpPercentage = Math.min((user.xp / 1000) * 100, 100);
+            <div class="mt-4">
+                <p class="text-gray-600">XP Progress</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <% 
+                    const xpPercentage = Math.min(((locals.user.xp || 0) / 1000) * 100, 100);
                     let widthClass = 'w-0';
-                    if (xpPercentage >= 100) widthClass = 'w-full';
-                    else if (xpPercentage >= 75) widthClass = 'w-3/4';
-                    else if (xpPercentage >= 50) widthClass = 'w-1/2';
-                    else if (xpPercentage >= 25) widthClass = 'w-1/4';
-                %>
-                <div class="bg-blue-600 h-2 rounded-full <%= widthClass %>"></div>
+                    if (xpPercentage >= 95) widthClass = 'w-full';
+                    else if (xpPercentage >= 90) widthClass = 'w-11/12';
+                    else if (xpPercentage >= 80) widthClass = 'w-10/12';
+                    else if (xpPercentage >= 75) widthClass = 'w-9/12';
+                    else if (xpPercentage >= 65) widthClass = 'w-8/12';
+                    else if (xpPercentage >= 60) widthClass = 'w-7/12';
+                    else if (xpPercentage >= 50) widthClass = 'w-6/12';
+                    else if (xpPercentage >= 40) widthClass = 'w-5/12';
+                    else if (xpPercentage >= 30) widthClass = 'w-4/12';
+                    else if (xpPercentage >= 25) widthClass = 'w-3/12';
+                    else if (xpPercentage >= 15) widthClass = 'w-2/12';
+                    else if (xpPercentage > 0) widthClass = 'w-1/12';
+                    %>
+                    <div class="bg-blue-600 h-2 rounded-full <%= widthClass %>"></div>
+                </div>
+                <p class="text-sm text-gray-500 mt-1"><%= locals.user.xp || 0 %> / 1000 XP</p>
             </div>
-            <p class="text-sm text-gray-500 mt-1"><%= user.xp %> / 1000 XP</p>
-        </div>
+        <% } else { %>
+            <h2 class="text-xl font-semibold mb-4">Welcome</h2>
+            <p class="text-gray-600">Please log in to view your dashboard</p>
+        <% } %>
     </div>
 
     <!-- Recent Activity -->
