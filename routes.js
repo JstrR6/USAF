@@ -91,17 +91,8 @@ router.get('/dashboard', (req, res) => {
         return res.redirect('/login');
     }
 
-    // Define a mapping from role IDs to image filenames
-    const roleImageMap = {
-        '1302347816496271472': 'first-sergeant1.png',
-        '1302347762687414394': 'first-sergeant2.png',
-        '1302347657372504104': 'first-sergeant3.png',
-        // Add other role IDs and their corresponding images here
-    };
-
     res.render('dashboard', {
         highestRole: req.session.highestRole || 'No role assigned',
-        roleImageMap: roleImageMap,
         highestRoleId: req.session.highestRoleId
     });
 });
