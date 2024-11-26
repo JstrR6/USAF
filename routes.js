@@ -4,6 +4,14 @@ const bcrypt = require('bcrypt');
 const User = require('./models/user');
 const router = express.Router();
 
+// Middleware to check authentication
+function isAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect('/login');
+}
+
 // Middleware to set session roles and highest role
 function setSessionRoles(req) {
     if (req.isAuthenticated()) {
@@ -35,13 +43,30 @@ function setSessionRoles(req) {
     }
 }
 
+// Middleware to add user data to all routes
+router.use((req, res, next) => {
+    res.locals.user = req.user || null;
+    res.locals.highestRole = req.session?.highestRole || 'No role assigned';
+    res.locals.path = req.path;
+    next();
+});
+
 router.get('/', (req, res) => {
-    res.render('login'); // Render the login.ejs view
+    if (req.isAuthenticated()) {
+        res.redirect('/dashboard');
+    } else {
+        res.redirect('/login');
+    }
 });
 
 // Render login page
 router.get('/login', (req, res) => {
-    res.render('login');
+    if (req.isAuthenticated()) {
+        return res.redirect('/dashboard');
+    }
+    res.render('login', {
+        title: 'Login'
+    });
 });
 
 // Handle login
@@ -61,7 +86,6 @@ router.post('/login', async (req, res, next) => {
             const hashedPassword = await bcrypt.hash(password, 10);
             user.password = hashedPassword;
             await user.save();
-            return res.redirect('/dashboard');
         }
 
         // Existing user, verify password
@@ -85,33 +109,75 @@ router.post('/login', async (req, res, next) => {
     }
 });
 
-// Render dashboard page
-router.get('/dashboard', (req, res) => {
-    if (!req.isAuthenticated()) {
-        return res.redirect('/login');
-    }
+// Logout route
+router.get('/logout', (req, res, next) => {
+    req.logout((err) => {
+        if (err) return next(err);
+        res.redirect('/login');
+    });
+});
 
+// Render dashboard page
+router.get('/dashboard', isAuthenticated, (req, res) => {
     res.render('dashboard', {
-        highestRole: req.session.highestRole || 'No role assigned',
-        highestRoleId: req.session.highestRoleId
+        title: 'Dashboard'
     });
 });
 
 // Render forms page
-router.get('/forms', (req, res) => {
-    res.render('forms');
+router.get('/forms', isAuthenticated, (req, res) => {
+    res.render('forms', {
+        title: 'Forms'
+    });
 });
 
 // Render members page
-router.get('/members', (req, res) => {
-    res.render('members');
+router.get('/members', isAuthenticated, async (req, res, next) => {
+    try {
+        const members = await User.find({})
+            .select('username roles xp')
+            .populate('roles');
+
+        const formattedMembers = members.map(member => {
+            const userRoles = member.roles.filter(role => {
+                const excludedRoles = [
+                    'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+                    'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+                    'Non-Commissioned Officers', 'Enlisted Airmen'
+                ];
+                return !excludedRoles.includes(role.name);
+            });
+
+            return {
+                username: member.username,
+                highestRole: userRoles.length > 0 ? userRoles[0].name : 'No role assigned',
+                xp: member.xp || 0
+            };
+        });
+
+        res.render('members', {
+            title: 'Members',
+            members: formattedMembers
+        });
+    } catch (err) {
+        next(err);
+    }
 });
 
 // Render profile page
-router.get('/profile', (req, res) => {
-    res.render('profile');
+router.get('/profile', isAuthenticated, (req, res) => {
+    res.render('profile', {
+        title: 'Profile'
+    });
 });
 
-// Add more routes as needed
+// Error handling middleware
+router.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).render('error', {
+        title: 'Error',
+        error: 'Something went wrong!'
+    });
+});
 
 module.exports = router;
