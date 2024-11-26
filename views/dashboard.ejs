@@ -1,64 +1,142 @@
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <!-- Welcome Card -->
-    <div class="bg-white rounded-lg shadow p-4">
-        <% if (locals.user) { %>
-            <h2 class="text-xl font-semibold mb-4">Welcome, <%= locals.user.username %></h2>
-            <div class="flex items-center mb-4">
-                <div>
-                    <p class="text-gray-600">Current Rank</p>
-                    <p class="font-semibold"><%= locals.highestRole %></p>
-                </div>
-            </div>
-            <div class="mt-4">
-                <p class="text-gray-600">XP Progress</p>
-                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                    <% 
-                    const xpPercentage = Math.min(((locals.user.xp || 0) / 1000) * 100, 100);
-                    let widthClass = 'w-0';
-                    if (xpPercentage >= 95) widthClass = 'w-full';
-                    else if (xpPercentage >= 90) widthClass = 'w-11/12';
-                    else if (xpPercentage >= 80) widthClass = 'w-10/12';
-                    else if (xpPercentage >= 75) widthClass = 'w-9/12';
-                    else if (xpPercentage >= 65) widthClass = 'w-8/12';
-                    else if (xpPercentage >= 60) widthClass = 'w-7/12';
-                    else if (xpPercentage >= 50) widthClass = 'w-6/12';
-                    else if (xpPercentage >= 40) widthClass = 'w-5/12';
-                    else if (xpPercentage >= 30) widthClass = 'w-4/12';
-                    else if (xpPercentage >= 25) widthClass = 'w-3/12';
-                    else if (xpPercentage >= 15) widthClass = 'w-2/12';
-                    else if (xpPercentage > 0) widthClass = 'w-1/12';
-                    %>
-                    <div class="bg-blue-600 h-2 rounded-full <%= widthClass %>"></div>
-                </div>
-                <p class="text-sm text-gray-500 mt-1"><%= locals.user.xp || 0 %> / 1000 XP</p>
-            </div>
-        <% } else { %>
-            <h2 class="text-xl font-semibold mb-4">Welcome</h2>
-            <p class="text-gray-600">Please log in to view your dashboard</p>
-        <% } %>
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USM Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
-    <!-- Recent Activity -->
-    <div class="bg-white rounded-lg shadow p-4">
-        <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
-        <div class="space-y-4">
-            <p class="text-gray-600">No recent activity to display</p>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .dashboard-card {
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            transition: width 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .quick-link {
+            transition: all 0.2s ease;
+        }
+
+        .quick-link:hover {
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Dashboard</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Welcome Card -->
+            <div class="dashboard-card bg-white rounded-lg shadow-lg p-6 fade-in" style="animation-delay: 0.1s;">
+                <% if (locals.user) { %>
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Welcome, <%= locals.user.username %></h2>
+                    <div class="flex items-center mb-6">
+                        <div class="bg-blue-100 rounded-full p-3 mr-4">
+                            <i class="fas fa-user-circle text-blue-500 text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Current Rank</p>
+                            <p class="font-semibold text-lg text-gray-800"><%= locals.highestRole %></p>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <p class="text-gray-600 mb-2">XP Progress</p>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <% 
+                            const xpPercentage = Math.min(((locals.user.xp || 0) / 1000) * 100, 100);
+                            %>
+                            <div class="progress-bar bg-blue-500 h-3 rounded-full" style="width: <%= xpPercentage %>%;"></div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2"><%= locals.user.xp || 0 %> / 1000 XP</p>
+                    </div>
+                <% } else { %>
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Welcome</h2>
+                    <p class="text-gray-600">Please log in to view your dashboard</p>
+                    <a href="/login" class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300">Log In</a>
+                <% } %>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="dashboard-card bg-white rounded-lg shadow-lg p-6 fade-in" style="animation-delay: 0.2s;">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Recent Activity</h2>
+                <div class="space-y-4">
+                    <% if (locals.recentActivity && locals.recentActivity.length > 0) { %>
+                        <% locals.recentActivity.forEach(activity => { %>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <i class="fas fa-clock text-blue-500 mr-3"></i>
+                                <div>
+                                    <p class="font-medium text-gray-800"><%= activity.title %></p>
+                                    <p class="text-sm text-gray-500"><%= activity.timestamp %></p>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <p class="text-gray-600">No recent activity to display</p>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="dashboard-card bg-white rounded-lg shadow-lg p-6 fade-in" style="animation-delay: 0.3s;">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Quick Links</h2>
+                <div class="space-y-3">
+                    <a href="/forms" class="quick-link flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition duration-300">
+                        <i class="fas fa-file-alt text-blue-500 mr-3"></i>
+                        <span>Submit New Form</span>
+                    </a>
+                    <a href="/members" class="quick-link flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition duration-300">
+                        <i class="fas fa-users text-green-500 mr-3"></i>
+                        <span>View Members</span>
+                    </a>
+                    <a href="/profile" class="quick-link flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition duration-300">
+                        <i class="fas fa-user text-purple-500 mr-3"></i>
+                        <span>Edit Profile</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Quick Links -->
-    <div class="bg-white rounded-lg shadow p-4">
-        <h2 class="text-xl font-semibold mb-4">Quick Links</h2>
-        <div class="space-y-2">
-            <a href="/forms" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-file-alt mr-2"></i> Submit New Form
-            </a>
-            <a href="/members" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-users mr-2"></i> View Members
-            </a>
-            <a href="/profile" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded-lg">
-                <i class="fas fa-user mr-2"></i> Edit Profile
-            </a>
-        </div>
-    </div>
-</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.dashboard-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('opacity-100');
+                }, 100 * index);
+            });
+
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                setTimeout(() => {
+                    progressBar.style.width = progressBar.getAttribute('data-width');
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
