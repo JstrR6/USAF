@@ -1,11 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Profile</title>
-</head>
-<body>
-    <h1>Profile</h1>
-    <p>View and edit your profile.</p>
-</body>
-</html>
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-6">Profile Information</h2>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Username</label>
+                <p class="mt-1 p-2 bg-gray-50 rounded-md"><%= user.username %></p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Current Rank</label>
+                <p class="mt-1 p-2 bg-gray-50 rounded-md"><%= highestRole %></p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">XP</label>
+                <p class="mt-1 p-2 bg-gray-50 rounded-md"><%= user.xp %></p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,12 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard</title>
-</head>
-<body>
-    <h1>Dashboard</h1>
-    <p>Welcome to the USAF Dashboard!</p>
-    <p>Rank: <strong><%= highestRole ? highestRole : 'No role assigned' %></strong></p>
-</body>
-</html>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Welcome Card -->
+    <div class="bg-white rounded-lg shadow p-4">
+        <h2 class="text-xl font-semibold mb-4">Welcome, <%= user.username %></h2>
+        <div class="flex items-center mb-4">
+            <div>
+                <p class="text-gray-600">Current Rank</p>
+                <p class="font-semibold"><%= highestRole %></p>
+            </div>
+        </div>
+        <div class="mt-4">
+            <p class="text-gray-600">XP Progress</p>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <%
+                    const xpPercentage = Math.min((user.xp / 1000) * 100, 100);
+                    let widthClass = 'w-0';
+                    if (xpPercentage >= 100) widthClass = 'w-full';
+                    else if (xpPercentage >= 75) widthClass = 'w-3/4';
+                    else if (xpPercentage >= 50) widthClass = 'w-1/2';
+                    else if (xpPercentage >= 25) widthClass = 'w-1/4';
+                %>
+                <div class="bg-blue-600 h-2 rounded-full <%= widthClass %>"></div>
+            </div>
+            <p class="text-sm text-gray-500 mt-1"><%= user.xp %> / 1000 XP</p>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-lg shadow p-4">
+        <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+        <div class="space-y-4">
+            <p class="text-gray-600">No recent activity to display</p>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="bg-white rounded-lg shadow p-4">
+        <h2 class="text-xl font-semibold mb-4">Quick Links</h2>
+        <div class="space-y-2">
+            <a href="/forms" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-file-alt mr-2"></i> Submit New Form
+            </a>
+            <a href="/members" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-users mr-2"></i> View Members
+            </a>
+            <a href="/profile" class="block p-3 bg-gray-50 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-user mr-2"></i> Edit Profile
+            </a>
+        </div>
+    </div>
+</div>

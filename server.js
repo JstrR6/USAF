@@ -7,6 +7,7 @@ const bcrypt = require('bcrypt');
 const User = require('./models/user');
 const routes = require('./routes');
 const app = express();
+const flash = require('connect-flash');
 const PORT = process.env.PORT || 3000;
 
 // Serve static files from the public directory
@@ -18,6 +19,8 @@ app.set('view engine', 'ejs');
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(flash());
 
 // Session setup
 app.use(session({
