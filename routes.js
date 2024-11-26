@@ -14,32 +14,39 @@ function isAuthenticated(req, res, next) {
 
 // Middleware to set session roles and highest role
 function setSessionRoles(req) {
-    if (req.isAuthenticated()) {
+    if (req.isAuthenticated() && req.user) {
         const excludedRoles = [
             'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
             'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
             'Non-Commissioned Officers', 'Enlisted Airmen'
         ];
 
+        // Ensure roles exist and are in the correct format
+        const userRoles = Array.isArray(req.user.roles) ? req.user.roles : [];
+        
+        // Log raw roles for debugging
+        console.log('Raw user roles:', JSON.stringify(req.user.roles));
+
+        // Filter out excluded roles and ensure role has a name property
+        const filteredRoles = userRoles.filter(role => {
+            const roleName = role?.name;
+            return roleName && !excludedRoles.includes(roleName);
+        });
+
         // Log all roles from the user object
-        console.log(`All roles for user ${req.user.username}: ${req.user.roles.map(role => role.name).join(', ')}`);
-
-        // Filter out excluded roles
-        const userRoles = req.user.roles.filter(role => !excludedRoles.includes(role.name));
-
-        // Log filtered roles
-        console.log(`Filtered roles for user ${req.user.username}: ${userRoles.map(role => role.name).join(', ')}`);
+        console.log(`All roles for user ${req.user.username}:`, userRoles.map(role => role?.name).filter(Boolean).join(', '));
+        console.log(`Filtered roles for user ${req.user.username}:`, filteredRoles.map(role => role.name).join(', '));
 
         // Determine the highest role
-        const highestRole = userRoles.length > 0 ? userRoles[0] : null; // Assuming roles are ordered by importance
+        const highestRole = filteredRoles.length > 0 ? filteredRoles[0] : null;
 
         // Store roles and highest role in session
-        req.session.roles = userRoles;
-        req.session.highestRole = highestRole ? highestRole.name : null;
+        req.session.roles = filteredRoles;
+        req.session.highestRole = highestRole ? highestRole.name : 'No role assigned';
         req.session.highestRoleId = highestRole ? highestRole.id : null;
 
         // Console log the highest role
-        console.log(`Highest role for user ${req.user.username}: ${req.session.highestRole}`);
+        console.log(`Highest role for user ${req.user.username}:`, req.session.highestRole);
     }
 }
 
@@ -74,37 +81,41 @@ router.post('/login', async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
-        const user = await User.findOne({ username }).populate('roles');
+        const user = await User.findOne({ username })
+            .populate({
+                path: 'roles',
+                select: 'name id'
+            });
 
         if (!user) {
-            // No user found with the given username
             return res.status(401).send('Access denied: Username not found.');
         }
 
+        // Log user data for debugging
+        console.log('Found user:', {
+            username: user.username,
+            roles: JSON.stringify(user.roles)
+        });
+
         if (!user.password) {
-            // New user, no password set
             const hashedPassword = await bcrypt.hash(password, 10);
             user.password = hashedPassword;
             await user.save();
         }
 
-        // Existing user, verify password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).send('Access denied: Incorrect password.');
         }
 
-        // Authenticate user
         req.login(user, (err) => {
             if (err) return next(err);
-
-            // Set session roles and highest role
             setSessionRoles(req);
-
             return res.redirect('/dashboard');
         });
 
     } catch (err) {
+        console.error('Login error:', err);
         return next(err);
     }
 });
@@ -120,9 +131,7 @@ router.get('/logout', (req, res, next) => {
 // Render dashboard page
 router.get('/dashboard', isAuthenticated, (req, res) => {
     res.render('dashboard', {
-        title: 'Dashboard',
-        user: req.user,
-        highestRole: req.session.highestRole || 'No role assigned'
+        title: 'Dashboard'
     });
 });
 
@@ -138,16 +147,19 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
     try {
         const members = await User.find({})
             .select('username roles xp')
-            .populate('roles');
+            .populate({
+                path: 'roles',
+                select: 'name id'
+            });
 
         const formattedMembers = members.map(member => {
-            const userRoles = member.roles.filter(role => {
+            const userRoles = (member.roles || []).filter(role => {
                 const excludedRoles = [
                     'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
                     'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
                     'Non-Commissioned Officers', 'Enlisted Airmen'
                 ];
-                return !excludedRoles.includes(role.name);
+                return role?.name && !excludedRoles.includes(role.name);
             });
 
             return {
@@ -162,6 +174,7 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             members: formattedMembers
         });
     } catch (err) {
+        console.error('Members error:', err);
         next(err);
     }
 });
@@ -175,7 +188,7 @@ router.get('/profile', isAuthenticated, (req, res) => {
 
 // Error handling middleware
 router.use((err, req, res, next) => {
-    console.error(err.stack);
+    console.error('Error:', err.stack);
     res.status(500).render('error', {
         title: 'Error',
         error: 'Something went wrong!'
