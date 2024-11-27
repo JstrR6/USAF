@@ -383,6 +383,12 @@ router.get('/forms/alltrainings/export', isAuthenticated, isOfficer, async (req,
     }
 });
 
+router.get('/forms/promotion', isAuthenticated, (req, res) => {
+    res.render('forms/promotion', {
+        title: 'Promotion Form'
+    });
+});
+
 router.get('/forms/promotion/verify/:username', isAuthenticated, async (req, res) => {
     try {
         const user = await User.findOne({ username: req.params.username });
