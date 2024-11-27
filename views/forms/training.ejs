@@ -43,19 +43,6 @@
             color: #fff;
         }
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-rank {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            font-size: 0.9rem;
-        }
-
         .nav-menu {
             display: flex;
             gap: 1rem;
@@ -76,6 +63,55 @@
             transform: translateY(-2px);
         }
 
+        .search-container {
+            margin: 2rem 0;
+        }
+
+        .training-form {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            color: #333;
+        }
+
+        input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        button {
+            background: #4299e1;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #51cf66;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
         @keyframes fadeIn {
             to {
                 opacity: 1;
@@ -87,10 +123,8 @@
 <body>
     <div class="training-container">
         <div class="training-header">
-            <div class="user-info">
-                <h2>Training Form</h2>
-                <span class="user-rank"><%= highestRole %></span>
-            </div>
+            <h2>Training Form</h2>
+            <span class="user-rank"><%= highestRole %></span>
         </div>
 
         <nav class="nav-menu">
@@ -100,25 +134,77 @@
             <a href="/profile" class="nav-item">Profile</a>
         </nav>
 
-        <!-- Form content will be added here later -->
-        
+        <div class="search-container">
+            <input type="text" id="trainerSearch" placeholder="Enter trainer username">
+            <button onclick="findTrainer()">Find</button>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <form id="trainingForm" class="training-form">
+            <input type="text" id="trainees" placeholder="Trainee usernames (separated by commas)" required>
+            <input type="number" id="xpAmount" placeholder="XP Amount" required min="0">
+            <button type="submit">Submit Training</button>
+            <div class="success-message" id="successMessage"></div>
+        </form>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                item.addEventListener('mouseenter', () => {
-                    item.style.transform = 'translateY(-3px)';
-                    item.style.boxShadow = '0 4px 6px rgba(50, 50, 93, 0.11)';
+        async function findTrainer() {
+            const trainerUsername = document.getElementById('trainerSearch').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const trainingForm = document.getElementById('trainingForm');
+            
+            try {
+                const response = await fetch(`/api/users/${trainerUsername}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.querySelector('.search-container').style.display = 'none';
+                    trainingForm.style.display = 'block';
+                    errorMessage.style.display = 'none';
+                } else {
+                    errorMessage.textContent = 'Trainer not found';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error finding trainer';
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        document.getElementById('trainingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const trainees = document.getElementById('trainees').value.split(',').map(t => t.trim());
+            const xpAmount = parseInt(document.getElementById('xpAmount').value);
+            const trainerUsername = document.getElementById('trainerSearch').value;
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                const response = await fetch('/api/training/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        trainer: trainerUsername,
+                        trainees,
+                        xpAmount
+                    })
                 });
-                item.addEventListener('mouseleave', () => {
-                    item.style.transform = 'translateY(0)';
-                    item.style.boxShadow = 'none';
-                });
-            });
+                
+                const data = await response.json();
+                if (data.success) {
+                    successMessage.textContent = data.needsApproval ? 
+                        'Training submitted for approval' : 
+                        'Training submitted and XP awarded';
+                    successMessage.style.display = 'block';
+                    document.getElementById('trainingForm').reset();
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error submitting training';
+                errorMessage.style.display = 'block';
+            }
         });
     </script>
 </body>
 </html>
->>>>>>> 5e15f3df39d369e322c1da93f54166733784b6e9

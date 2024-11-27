@@ -2,6 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const bcrypt = require('bcrypt');
 const User = require('./models/user');
+const Training = require('./models/training');
 const router = express.Router();
 
 // Middleware to check authentication
@@ -183,58 +184,6 @@ router.get('/profile', isAuthenticated, (req, res) => {
     });
 });
 
-<<<<<<< HEAD
-// Find user API endpoint
-router.get('/api/users/:username', async (req, res) => {
-    try {
-        const user = await User.findOne({ username: req.params.username });
-        if (user) {
-            res.json({ success: true });
-        } else {
-            res.json({ success: false });
-        }
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// Submit training API endpoint
-router.post('/api/training/submit', async (req, res) => {
-    try {
-        const { trainer, trainees, xpAmount } = req.body;
-        const needsApproval = xpAmount >= 10;
-
-        // Create training record
-        const training = new Training({
-            trainer,
-            trainees,
-            xpAmount,
-            needsApproval,
-            awarded: !needsApproval // Auto award if doesn't need approval
-        });
-        await training.save();
-
-        // If doesn't need approval, update XP for trainees
-        if (!needsApproval) {
-            for (const trainee of trainees) {
-                await User.findOneAndUpdate(
-                    { username: trainee },
-                    { $inc: { xp: xpAmount } }
-                );
-            }
-        }
-
-        res.json({ 
-            success: true, 
-            needsApproval,
-            message: needsApproval ? 'Training submitted for approval' : 'Training submitted and XP awarded'
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-=======
 // Training Form route
 router.get('/forms/training', isAuthenticated, (req, res) => {
     res.render('forms/training', {
@@ -256,7 +205,6 @@ router.get('/forms/award', isAuthenticated, (req, res) => {
     });
 });
 
->>>>>>> 5e15f3df39d369e322c1da93f54166733784b6e9
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);
