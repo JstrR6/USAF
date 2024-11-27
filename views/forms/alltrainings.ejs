@@ -17,48 +17,39 @@
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
             min-height: 100vh;
-            padding: 1rem;
+            padding: 2rem;
         }
 
         .trainings-container {
             background: rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
             border-radius: 10px;
-            padding: 1.5rem;
+            padding: 2rem;
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
             border: 1px solid rgba(255, 255, 255, 0.18);
-            transform: translateY(20px);
-            opacity: 0;
-            animation: fadeIn 0.5s ease-out forwards;
         }
 
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        .nav-menu {
+            display: flex;
             gap: 1rem;
             margin-bottom: 2rem;
         }
 
-        .stat-card {
+        .nav-item {
             background: rgba(255, 255, 255, 0.1);
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
             color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
         }
 
-        .stat-card h3 {
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .stat-card p {
-            font-size: 1.5rem;
-            font-weight: 600;
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
 
         .filters-container {
@@ -74,26 +65,10 @@
             border-radius: 5px;
             background: rgba(255, 255, 255, 0.1);
             color: white;
-            transition: all 0.3s ease;
-        }
-
-        .filter-input:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.2);
         }
 
         .filter-input::placeholder {
             color: rgba(255, 255, 255, 0.6);
-        }
-
-        .filter-input option {
-            background: #541170;
-            color: white;
-        }
-
-        .training-grid {
-            display: grid;
-            gap: 1rem;
         }
 
         .training-card {
@@ -101,13 +76,31 @@
             border-radius: 10px;
             padding: 1.5rem;
             color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            margin-bottom: 1rem;
         }
 
-        .training-card:hover {
-            transform: translateY(-2px);
-            background: rgba(255, 255, 255, 0.15);
+        .training-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+        }
+
+        .status-approved {
+            background: #48bb78;
+            color: white;
+        }
+
+        .status-pending {
+            background: #ed8936;
+            color: white;
         }
 
         .pagination {
@@ -124,109 +117,36 @@
             background: rgba(255, 255, 255, 0.1);
             color: white;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .page-btn:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.2);
         }
 
         .page-btn.active {
             background: #4299e1;
         }
 
-        .export-btn {
-            background: #4299e1;
+        .header {
             color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 1rem;
-        }
-
-        .export-btn:hover {
-            background: #3182ce;
-        }
-
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            display: none;
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        .chart-container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1rem;
-            border-radius: 8px;
             margin-bottom: 2rem;
-            height: 300px;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .filters-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-container {
-                grid-template-columns: 1fr;
-            }
-
-            .training-card {
-                font-size: 0.9rem;
-            }
+        .no-trainings {
+            text-align: center;
+            color: white;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="loading">
-        <div class="loading-spinner"></div>
-    </div>
-
     <div class="trainings-container">
-        <div class="stats-container">
-            <div class="stat-card">
-                <h3>Total Trainings</h3>
-                <p><%= totalTrainings %></p>
-            </div>
-            <div class="stat-card">
-                <h3>Total XP Awarded</h3>
-                <p><%= totalXPAwarded %></p>
-            </div>
-            <div class="stat-card">
-                <h3>Pending Approvals</h3>
-                <p><%= pendingApprovals %></p>
-            </div>
-        </div>
+        <h2 class="header">All Training Records</h2>
 
-        <div class="chart-container">
-            <canvas id="trainingChart"></canvas>
-        </div>
-
-        <button class="export-btn" onclick="exportTrainings()">Export to CSV</button>
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
 
         <div class="filters-container">
             <input type="text" id="searchInput" placeholder="Search trainer/trainee..." class="filter-input">
@@ -238,41 +158,36 @@
             <select id="sortFilter" class="filter-input">
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
-                <option value="xp-high">Highest XP</option>
-                <option value="xp-low">Lowest XP</option>
             </select>
-            <input type="date" id="dateFilter" class="filter-input">
         </div>
 
-        <div class="training-grid">
+        <div class="training-cards">
             <% if (trainings && trainings.length > 0) { %>
                 <% trainings.forEach(training => { %>
-                    <div class="training-card" onclick="viewTraining('<%= training._id %>')">
-                        <div class="training-info">
-                            <div class="training-row">
-                                <strong>Trainer:</strong>
-                                <span><%= training.trainer %></span>
-                            </div>
-                            <div class="training-row">
-                                <strong>Trainees:</strong>
-                                <span><%= training.trainees.join(', ') %></span>
-                            </div>
-                            <div class="training-row">
-                                <strong>XP Amount:</strong>
-                                <span><%= training.xpAmount %></span>
-                            </div>
-                            <div class="training-row">
-                                <strong>Date:</strong>
-                                <span><%= new Date(training.dateSubmitted).toLocaleDateString() %></span>
-                            </div>
-                            <div class="training-row">
-                                <strong>Status:</strong>
-                                <% if (training.awarded) { %>
-                                    <span class="status-badge status-approved">Approved</span>
-                                <% } else if (training.needsApproval) { %>
-                                    <span class="status-badge status-pending">Pending</span>
-                                <% } %>
-                            </div>
+                    <div class="training-card">
+                        <div class="training-row">
+                            <strong>Trainer:</strong>
+                            <span><%= training.trainer %></span>
+                        </div>
+                        <div class="training-row">
+                            <strong>Trainees:</strong>
+                            <span><%= training.trainees.join(', ') %></span>
+                        </div>
+                        <div class="training-row">
+                            <strong>XP Amount:</strong>
+                            <span><%= training.xpAmount %></span>
+                        </div>
+                        <div class="training-row">
+                            <strong>Date:</strong>
+                            <span><%= new Date(training.dateSubmitted).toLocaleDateString() %></span>
+                        </div>
+                        <div class="training-row">
+                            <strong>Status:</strong>
+                            <% if (training.awarded) { %>
+                                <span class="status-badge status-approved">Approved</span>
+                            <% } else if (training.needsApproval) { %>
+                                <span class="status-badge status-pending">Pending</span>
+                            <% } %>
                         </div>
                     </div>
                 <% }); %>
@@ -283,84 +198,61 @@
             <% } %>
         </div>
 
-        <div class="pagination">
-            <% for(let i = 1; i <= totalPages; i++) { %>
-                <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
-                        onclick="changePage(<%= i %>)">
-                    <%= i %>
-                </button>
-            <% } %>
-        </div>
+        <% if (totalPages > 1) { %>
+            <div class="pagination">
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
+                            onclick="window.location.href='/forms/alltrainings?page=<%= i %>'">
+                        <%= i %>
+                    </button>
+                <% } %>
+            </div>
+        <% } %>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        let trainings = <%- JSON.stringify(trainings) %>;
-        const loading = document.querySelector('.loading');
-
-        // Initialize chart
-        const ctx = document.getElementById('trainingChart').getContext('2d');
-        const trainingChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [], // Will be filled with dates
-                datasets: [{
-                    label: 'XP Awarded',
-                    data: [], // Will be filled with XP amounts
-                    borderColor: '#4299e1',
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
+        // Simple search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.training-card');
+            
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
         });
 
-        // Filter functionality
-        function applyFilters() {
-            loading.style.display = 'flex';
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const status = document.getElementById('statusFilter').value;
-            const sort = document.getElementById('sortFilter').value;
-            const date = document.getElementById('dateFilter').value;
-
-            fetch('/forms/alltrainings/filter', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ search, status, sort, date })
-            })
-            .then(res => res.json())
-            .then(data => {
-                trainings = data.trainings;
-                updateTrainingDisplay();
-                loading.style.display = 'none';
+        // Status filter
+        document.getElementById('statusFilter').addEventListener('change', function(e) {
+            const status = e.target.value;
+            const cards = document.querySelectorAll('.training-card');
+            
+            cards.forEach(card => {
+                if (status === 'all') {
+                    card.style.display = '';
+                    return;
+                }
+                
+                const hasStatus = card.querySelector(status === 'approved' ? 
+                    '.status-approved' : '.status-pending');
+                card.style.display = hasStatus ? '' : 'none';
             });
-        }
+        });
 
-        // Pagination
-        function changePage(page) {
-            loading.style.display = 'flex';
-            window.location.href = `/forms/alltrainings?page=${page}`;
-        }
-
-        // Export functionality
-        function exportTrainings() {
-            window.location.href = '/forms/alltrainings/export';
-        }
-
-        // View individual training
-        function viewTraining(id) {
-            window.location.href = `/forms/alltrainings/${id}`;
-        }
-
-        // Event listeners
-        document.getElementById('searchInput').addEventListener('input', applyFilters);
-        document.getElementById('statusFilter').addEventListener('change', applyFilters);
-        document.getElementById('sortFilter').addEventListener('change', applyFilters);
-        document.getElementById('dateFilter').addEventListener('change', applyFilters);
+        // Sort filter
+        document.getElementById('sortFilter').addEventListener('change', function(e) {
+            const container = document.querySelector('.training-cards');
+            const cards = Array.from(container.querySelectorAll('.training-card'));
+            
+            cards.sort((a, b) => {
+                const dateA = new Date(a.querySelector('.training-row:nth-child(4) span').textContent);
+                const dateB = new Date(b.querySelector('.training-row:nth-child(4) span').textContent);
+                return e.target.value === 'newest' ? dateB - dateA : dateA - dateB;
+            });
+            
+            container.innerHTML = '';
+            cards.forEach(card => container.appendChild(card));
+        });
     </script>
 </body>
 </html>
