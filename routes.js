@@ -5,6 +5,7 @@ const User = require('./models/user');
 const Training = require('./models/training');
 const Promotion = require('./models/promotion');
 const bot = require('./bot');
+const Placement = require('./models/placement');
 const router = express.Router();
 
 // Middleware to check authentication
@@ -512,6 +513,54 @@ router.post('/forms/promotions/handle', isAuthenticated, isOfficer, async (req, 
     } catch (error) {
         console.error('Error handling promotion:', error);
         res.status(500).json({ success: false, message: 'Error handling promotion' });
+    }
+});
+
+router.get('/forms/placement', isAuthenticated, isOfficer, (req, res) => {
+    res.render('forms/placement', {
+        title: 'Placement Form'
+    });
+});
+
+// Verify user and get current placement
+router.get('/forms/placement/verify/:username', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.username });
+        if (user) {
+            // You might want to add a currentPlacement field to your User model
+            // or handle it differently based on your needs
+            res.json({
+                success: true,
+                username: user.username,
+                currentPlacement: user.currentPlacement || 'None'
+            });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Submit placement request
+router.post('/forms/placement/submit', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const { username, currentPlacement, newPlacement, placementRank, submittedBy } = req.body;
+
+        const placement = new Placement({
+            username,
+            currentPlacement,
+            newPlacement,
+            placementRank,
+            submittedBy,
+            status: 'pending'
+        });
+
+        await placement.save();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Placement submission error:', error);
+        res.status(500).json({ success: false, message: 'Error submitting placement' });
     }
 });
 

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USM Placement Form</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .placement-container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        .placement-form {
+            display: none;
+        }
+
+        .search-container input,
+        .placement-form input,
+        .placement-form select {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: black;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            background: #4299e1;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #3182ce;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #51cf66;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            color: black;
+        }
+
+        select option {
+            background: #541170;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="placement-container">
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
+        <div class="search-container">
+            <input type="text" id="usernameSearch" placeholder="Enter username for placement">
+            <button onclick="findUser()">Find</button>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <form id="placementForm" class="placement-form">
+            <div class="user-info">
+                <p><strong>Username:</strong> <span id="displayUsername"></span></p>
+                <p><strong>Current Placement:</strong> <span id="currentPlacement"></span></p>
+            </div>
+
+            <input type="text" id="newPlacement" placeholder="Enter new placement" required>
+
+            <select id="placementRank" required>
+                <option value="">Select Placement Rank</option>
+                <option value="Commander">Commander</option>
+                <option value="Deputy Commander">Deputy Commander</option>
+                <option value="Senior Enlisted Leader">Senior Enlisted Leader</option>
+                <option value="Section Chief">Section Chief</option>
+                <option value="Non-Commissioned Officer In Charge">Non-Commissioned Officer In Charge</option>
+                <option value="Squad Sergeant">Squad Sergeant</option>
+                <option value="Squad Leader">Squad Leader</option>
+            </select>
+
+            <button type="submit">Submit Placement</button>
+            <div class="success-message" id="successMessage"></div>
+        </form>
+    </div>
+
+    <script>
+        async function findUser() {
+            const username = document.getElementById('usernameSearch').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const placementForm = document.getElementById('placementForm');
+            
+            try {
+                const response = await fetch(`/forms/placement/verify/${username}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.querySelector('.search-container').style.display = 'none';
+                    placementForm.style.display = 'block';
+                    document.getElementById('displayUsername').textContent = data.username;
+                    document.getElementById('currentPlacement').textContent = data.currentPlacement || 'None';
+                    errorMessage.style.display = 'none';
+                } else {
+                    errorMessage.textContent = 'User not found';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error finding user';
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        document.getElementById('placementForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                const response = await fetch('/forms/placement/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: document.getElementById('displayUsername').textContent,
+                        currentPlacement: document.getElementById('currentPlacement').textContent,
+                        newPlacement: document.getElementById('newPlacement').value,
+                        placementRank: document.getElementById('placementRank').value,
+                        submittedBy: '<%= user.username %>'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    successMessage.textContent = 'Placement submitted successfully';
+                    successMessage.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/forms';
+                    }, 2000);
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error submitting placement';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
