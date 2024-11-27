@@ -112,3 +112,54 @@ client.login(process.env.DISCORD_BOT_TOKEN)
     .catch(err => console.error('Bot login error:', err));
 
 module.exports = client;
+
+async function updateUserRole(discordId, newRank) {
+    try {
+        const guild = client.guilds.cache.first();
+        if (!guild) {
+            console.log('No guild found');
+            return false;
+        }
+
+        const member = await guild.members.fetch(discordId);
+        if (!member) {
+            console.log('Member not found');
+            return false;
+        }
+
+        // Remove old rank roles
+        const rankRoles = member.roles.cache.filter(role => {
+            const roleName = role.name;
+            return [
+                'Private', 'Private First Class', 'Specialist', 'Corporal',
+                'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
+                'Master Sergeant', 'First Sergeant', 'Sergeant Major',
+                'Command Sergeant Major', 'Sergeant Major of the Army',
+                'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+                'Lieutenant Colonel', 'Colonel', 'Brigadier General',
+                'Major General', 'Lieutenant General', 'General', 'General of the Army'
+            ].includes(roleName);
+        });
+
+        for (const [_, role] of rankRoles) {
+            await member.roles.remove(role);
+        }
+
+        // Add new rank role
+        const newRole = guild.roles.cache.find(role => role.name === newRank);
+        if (newRole) {
+            await member.roles.add(newRole);
+            console.log(`Updated ${member.user.username}'s role to ${newRank}`);
+            return true;
+        } else {
+            console.log(`Role ${newRank} not found`);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error updating Discord role:', error);
+        return false;
+    }
+}
+
+// Export the function
+module.exports.updateUserRole = updateUserRole;

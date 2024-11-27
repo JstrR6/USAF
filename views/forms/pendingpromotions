@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USM Pending Promotions</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .promotions-container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .promotion-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .promotion-info {
+            margin-bottom: 1rem;
+        }
+
+        .promotion-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: black;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .approve-btn, .reject-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .approve-btn {
+            background: #48bb78;
+            color: white;
+        }
+
+        .reject-btn {
+            background: #f56565;
+            color: white;
+        }
+
+        .approve-btn:hover {
+            background: #38a169;
+        }
+
+        .reject-btn:hover {
+            background: #e53e3e;
+        }
+
+        .no-promotions {
+            text-align: center;
+            color: black;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .reason-text {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="promotions-container">
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
+        <div class="promotions-list">
+            <% if (promotions && promotions.length > 0) { %>
+                <% promotions.forEach(promotion => { %>
+                    <div class="promotion-card" id="promotion-<%= promotion._id %>">
+                        <div class="promotion-info">
+                            <div class="promotion-row">
+                                <strong>Username:</strong>
+                                <span><%= promotion.username %></span>
+                            </div>
+                            <div class="promotion-row">
+                                <strong>Current Rank:</strong>
+                                <span><%= promotion.currentRank %></span>
+                            </div>
+                            <div class="promotion-row">
+                                <strong>Requested Rank:</strong>
+                                <span><%= promotion.promotionRank %></span>
+                            </div>
+                            <div class="promotion-row">
+                                <strong>Submitted By:</strong>
+                                <span><%= promotion.submittedBy %></span>
+                            </div>
+                            <div class="promotion-row">
+                                <strong>Date Submitted:</strong>
+                                <span><%= new Date(promotion.dateSubmitted).toLocaleDateString() %></span>
+                            </div>
+                            <div class="reason-text">
+                                <strong>Reason:</strong><br>
+                                <%= promotion.reason %>
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button class="approve-btn" onclick="handlePromotion('<%= promotion._id %>', 'approve')">
+                                Approve
+                            </button>
+                            <button class="reject-btn" onclick="handlePromotion('<%= promotion._id %>', 'reject')">
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="no-promotions">
+                    <h3>No pending promotion requests</h3>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        async function handlePromotion(promotionId, action) {
+            try {
+                const response = await fetch('/forms/promotions/handle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        promotionId,
+                        action
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    const card = document.getElementById(`promotion-${promotionId}`);
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.remove();
+                        // Check if no more promotions
+                        const remainingCards = document.querySelectorAll('.promotion-card');
+                        if (remainingCards.length === 0) {
+                            document.querySelector('.promotions-list').innerHTML = `
+                                <div class="no-promotions">
+                                    <h3>No pending promotion requests</h3>
+                                </div>
+                            `;
+                        }
+                    }, 300);
+                }
+            } catch (error) {
+                console.error('Error handling promotion:', error);
+            }
+        }
+    </script>
+</body>
+</html>

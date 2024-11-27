@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const User = require('./models/user');
 const Training = require('./models/training');
 const Promotion = require('./models/promotion');
+const bot = require('./bot');
 const router = express.Router();
 
 // Middleware to check authentication
@@ -424,6 +425,66 @@ router.post('/forms/promotion/submit', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Promotion submission error:', error);
         res.status(500).json({ success: false, message: 'Error submitting promotion' });
+    }
+});
+
+router.get('/forms/pendingpromotions', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const promotions = await Promotion.find({ status: 'pending' })
+            .sort({ dateSubmitted: -1 });
+
+        res.render('forms/pendingpromotions', {
+            title: 'Pending Promotions',
+            promotions
+        });
+    } catch (error) {
+        console.error('Error fetching pending promotions:', error);
+        next(error);
+    }
+});
+
+// Handle promotion approval/rejection
+router.post('/forms/promotions/handle', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const { promotionId, action } = req.body;
+        const promotion = await Promotion.findById(promotionId);
+
+        if (!promotion) {
+            return res.json({ success: false, message: 'Promotion request not found' });
+        }
+
+        if (action === 'approve') {
+            // Get user's Discord ID
+            const user = await User.findOne({ username: promotion.username });
+            if (!user || !user.discordId) {
+                return res.json({ success: false, message: 'User Discord account not found' });
+            }
+
+            // Update Discord role
+            const roleUpdated = await bot.updateUserRole(user.discordId, promotion.promotionRank);
+            if (!roleUpdated) {
+                return res.json({ success: false, message: 'Failed to update Discord role' });
+            }
+
+            // Update promotion status
+            promotion.status = 'approved';
+            await promotion.save();
+
+            // Update user's rank in database
+            await User.findOneAndUpdate(
+                { username: promotion.username },
+                { $set: { 'roles.0.name': promotion.promotionRank } }
+            );
+
+        } else if (action === 'reject') {
+            promotion.status = 'rejected';
+            await promotion.save();
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error handling promotion:', error);
+        res.status(500).json({ success: false, message: 'Error handling promotion' });
     }
 });
 
