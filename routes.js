@@ -18,7 +18,7 @@ function setSessionRoles(req) {
         const excludedRoles = [
             'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
             'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-            'Non-Commissioned Officers', 'Enlisted Airmen'
+            'Non-Commissioned Officers', 'Enlisted', 'Donor'
         ];
 
         // Ensure roles exist and are in the correct format
