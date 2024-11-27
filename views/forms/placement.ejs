@@ -221,6 +221,7 @@
         <div class="modal-content">
             <div class="unit-create">
                 <select id="unitType" class="filter-input">
+                    <option value="Army">Army</option>
                     <option value="Corps">Corps</option>
                     <option value="Division">Division</option>
                     <option value="Brigade">Brigade</option>
@@ -235,6 +236,10 @@
             </div>
 
             <div id="unitsDisplay">
+                <div class="unit-section">
+                    <h3>Army</h3>
+                    <div id="armyUnits" class="unit-list"></div>
+                </div>
                 <div class="unit-section">
                     <h3>Corps</h3>
                     <div id="corpsUnits" class="unit-list"></div>
@@ -319,7 +324,7 @@
         }
 
         function displayUnits(units) {
-            const types = ['Corps', 'Division', 'Brigade', 'Battalion', 'Company', 'Platoon', 'Section', 'Squad'];
+            const types = ['Army', 'Corps', 'Division', 'Brigade', 'Battalion', 'Company', 'Platoon', 'Section', 'Squad'];
             types.forEach(type => {
                 const container = document.getElementById(type.toLowerCase() + 'Units');
                 if (container) {
