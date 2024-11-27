@@ -428,8 +428,22 @@ router.post('/forms/promotion/submit', isAuthenticated, async (req, res) => {
     }
 });
 
-router.get('/forms/pendingpromotions', isAuthenticated, (req, res) => {
+router.get('/forms/pendingpromotions', isAuthenticated, async (req, res) => { // Added async
     // Check if user has officer rank
+    const officerRanks = [
+        'Second Lieutenant',
+        'First Lieutenant',
+        'Captain',
+        'Major',
+        'Lieutenant Colonel',
+        'Colonel',
+        'Brigadier General',
+        'Major General',
+        'Lieutenant General',
+        'General',
+        'General of the Army'
+    ];
+
     const hasOfficerRole = req.user.roles && req.user.roles.some(role => 
         officerRanks.includes(role.name)
     );
@@ -439,8 +453,10 @@ router.get('/forms/pendingpromotions', isAuthenticated, (req, res) => {
     }
 
     try {
-        const promotions = Promotion.find({ status: 'pending' })
+        const promotions = await Promotion.find({ status: 'pending' })  // Added await
             .sort({ dateSubmitted: -1 });
+
+        console.log('Found promotions:', promotions); // Debug log
 
         res.render('forms/pendingpromotions', {
             title: 'Pending Promotions',
@@ -454,7 +470,6 @@ router.get('/forms/pendingpromotions', isAuthenticated, (req, res) => {
         });
     }
 });
-
 // Handle promotion approval/rejection
 router.post('/forms/promotions/handle', isAuthenticated, isOfficer, async (req, res) => {
     try {
@@ -499,20 +514,6 @@ router.post('/forms/promotions/handle', isAuthenticated, isOfficer, async (req, 
         res.status(500).json({ success: false, message: 'Error handling promotion' });
     }
 });
-
-const officerRanks = [
-    'Second Lieutenant',
-    'First Lieutenant',
-    'Captain',
-    'Major',
-    'Lieutenant Colonel',
-    'Colonel',
-    'Brigadier General',
-    'Major General',
-    'Lieutenant General',
-    'General',
-    'General of the Army'
-];
 
 // Error handling middleware
 router.use((err, req, res, next) => {
