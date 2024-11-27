@@ -428,9 +428,18 @@ router.post('/forms/promotion/submit', isAuthenticated, async (req, res) => {
     }
 });
 
-router.get('/forms/pendingpromotions', isAuthenticated, isOfficer, async (req, res) => {
+router.get('/forms/pendingpromotions', isAuthenticated, (req, res) => {
+    // Check if user has officer rank
+    const hasOfficerRole = req.user.roles && req.user.roles.some(role => 
+        officerRanks.includes(role.name)
+    );
+
+    if (!hasOfficerRole) {
+        return res.redirect('/forms');
+    }
+
     try {
-        const promotions = await Promotion.find({ status: 'pending' })
+        const promotions = Promotion.find({ status: 'pending' })
             .sort({ dateSubmitted: -1 });
 
         res.render('forms/pendingpromotions', {
@@ -439,7 +448,10 @@ router.get('/forms/pendingpromotions', isAuthenticated, isOfficer, async (req, r
         });
     } catch (error) {
         console.error('Error fetching pending promotions:', error);
-        next(error);
+        res.status(500).render('error', {
+            title: 'Error',
+            error: 'Error fetching promotions'
+        });
     }
 });
 
