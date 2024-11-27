@@ -203,14 +203,23 @@
 
             if (hasOfficerRole) { %>
                 <div class="form-card">
-                    <div class="form-icon">✅</div>
-                    <h3 class="form-title">Pending Approvals</h3>
-                    <p class="form-description">Review and manage pending training approvals</p>
-                    <button class="form-button" onclick="window.location.href='/forms/approvals'">
-                        Pending Approvals
-                    </button>
-                </div>
-            <% } %>
+                <div class="form-icon">✅</div>
+                <h3 class="form-title">Pending Approvals</h3>
+                <p class="form-description">Review and manage pending training approvals</p>
+                <button class="form-button" onclick="window.location.href='/forms/approvals'">
+                    Pending Approvals
+                </button>
+            </div>
+
+    <div class="form-card">
+        <div class="form-icon">📝</div>
+        <h3 class="form-title">All Trainings</h3>
+        <p class="form-description">View all training records</p>
+        <button class="form-button" onclick="window.location.href='/forms/alltrainings'">
+            All Trainings
+        </button>
+    </div>
+<% } %>
         </div>
     </div>
 

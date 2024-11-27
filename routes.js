@@ -348,6 +348,44 @@ router.post('/forms/approvals/handle', isAuthenticated, async (req, res) => {
     }
 });
 
+router.get('/forms/alltrainings', isAuthenticated, async (req, res) => {
+    try {
+        const officerRanks = [
+            'Second Lieutenant',
+            'First Lieutenant',
+            'Captain',
+            'Major',
+            'Lieutenant Colonel',
+            'Colonel',
+            'Brigadier General',
+            'Major General',
+            'Lieutenant General',
+            'General',
+            'General of the Army'
+        ];
+
+        const hasOfficerRole = req.user.roles && req.user.roles.some(role => 
+            officerRanks.includes(role.name)
+        );
+
+        if (!hasOfficerRole) {
+            return res.redirect('/forms');
+        }
+
+        // Fetch all trainings, sorted by date
+        const trainings = await Training.find({})
+            .sort({ dateSubmitted: -1 });
+
+        res.render('forms/alltrainings', {
+            title: 'All Trainings',
+            trainings
+        });
+    } catch (error) {
+        console.error('Error fetching trainings:', error);
+        next(error);
+    }
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);

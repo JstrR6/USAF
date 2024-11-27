@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USM All Trainings</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .trainings-container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transform: translateY(20px);
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .trainings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            color: #fff;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .training-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .training-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            color: white;
+        }
+
+        .training-info {
+            margin-bottom: 1rem;
+        }
+
+        .training-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-approved {
+            background: #48bb78;
+            color: white;
+        }
+
+        .status-pending {
+            background: #ed8936;
+            color: white;
+        }
+
+        .no-trainings {
+            text-align: center;
+            color: white;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="trainings-container">
+        <div class="trainings-header">
+            <h2>All Training Records</h2>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
+        <div class="training-grid">
+            <% if (trainings && trainings.length > 0) { %>
+                <% trainings.forEach(training => { %>
+                    <div class="training-card">
+                        <div class="training-info">
+                            <div class="training-row">
+                                <strong>Trainer:</strong>
+                                <span><%= training.trainer %></span>
+                            </div>
+                            <div class="training-row">
+                                <strong>Trainees:</strong>
+                                <span><%= training.trainees.join(', ') %></span>
+                            </div>
+                            <div class="training-row">
+                                <strong>XP Amount:</strong>
+                                <span><%= training.xpAmount %></span>
+                            </div>
+                            <div class="training-row">
+                                <strong>Date Submitted:</strong>
+                                <span><%= new Date(training.dateSubmitted).toLocaleDateString() %></span>
+                            </div>
+                            <div class="training-row">
+                                <strong>Status:</strong>
+                                <% if (training.awarded) { %>
+                                    <span class="status-badge status-approved">Approved</span>
+                                <% } else if (training.needsApproval) { %>
+                                    <span class="status-badge status-pending">Pending Approval</span>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="no-trainings">
+                    <h3>No training records found</h3>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    item.style.transform = 'translateY(-3px)';
+                    item.style.boxShadow = '0 4px 6px rgba(50, 50, 93, 0.11)';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.transform = 'translateY(0)';
+                    item.style.boxShadow = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
