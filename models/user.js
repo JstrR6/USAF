@@ -6,11 +6,27 @@ const roleSchema = new mongoose.Schema({
 });
 
 const userSchema = new mongoose.Schema({
-    username: String,
-    password: String,
-    discordId: String,
+    username: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    discordId: {
+        type: String,
+        unique: true
+    },
     roles: [roleSchema],
-    xp: { type: Number, default: 0 }
+    xp: {
+        type: Number,
+        default: 0,
+        min: 0
+    }
+}, {
+    timestamps: true  // Adds createdAt and updatedAt timestamps
 });
 
 module.exports = mongoose.model('User', userSchema);
