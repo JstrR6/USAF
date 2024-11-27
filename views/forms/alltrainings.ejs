@@ -17,14 +17,14 @@
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
             min-height: 100vh;
-            padding: 2rem;
+            padding: 1rem;
         }
 
         .trainings-container {
             background: rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
             border-radius: 10px;
-            padding: 2rem;
+            padding: 1.5rem;
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
@@ -35,37 +35,65 @@
             animation: fadeIn 0.5s ease-out forwards;
         }
 
-        .trainings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            color: #fff;
-        }
-
-        .nav-menu {
-            display: flex;
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
         }
 
-        .nav-item {
+        .stat-card {
             background: rgba(255, 255, 255, 0.1);
-            padding: 0.75rem 1.5rem;
-            border-radius: 5px;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
             color: white;
-            text-decoration: none;
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stat-card p {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .filters-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-input {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
             transition: all 0.3s ease;
         }
 
-        .nav-item:hover {
+        .filter-input:focus {
+            outline: none;
             background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
+        }
+
+        .filter-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .filter-input option {
+            background: #541170;
+            color: white;
         }
 
         .training-grid {
             display: grid;
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
         .training-card {
@@ -73,68 +101,153 @@
             border-radius: 10px;
             padding: 1.5rem;
             color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .training-info {
+        .training-card:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .page-btn.active {
+            background: #4299e1;
+        }
+
+        .export-btn {
+            background: #4299e1;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
             margin-bottom: 1rem;
         }
 
-        .training-row {
+        .export-btn:hover {
+            background: #3182ce;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
         }
 
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .status-approved {
-            background: #48bb78;
-            color: white;
-        }
-
-        .status-pending {
-            background: #ed8936;
-            color: white;
-        }
-
-        .no-trainings {
-            text-align: center;
-            color: white;
-            padding: 2rem;
+        .chart-container {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            height: 300px;
         }
 
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-                transform: translateY(0);
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .filters-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .training-card {
+                font-size: 0.9rem;
             }
         }
     </style>
 </head>
 <body>
+    <div class="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
     <div class="trainings-container">
-        <div class="trainings-header">
-            <h2>All Training Records</h2>
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Total Trainings</h3>
+                <p><%= totalTrainings %></p>
+            </div>
+            <div class="stat-card">
+                <h3>Total XP Awarded</h3>
+                <p><%= totalXPAwarded %></p>
+            </div>
+            <div class="stat-card">
+                <h3>Pending Approvals</h3>
+                <p><%= pendingApprovals %></p>
+            </div>
         </div>
 
-        <nav class="nav-menu">
-            <a href="/dashboard" class="nav-item">Dashboard</a>
-            <a href="/members" class="nav-item">Members</a>
-            <a href="/forms" class="nav-item">Forms</a>
-            <a href="/profile" class="nav-item">Profile</a>
-        </nav>
+        <div class="chart-container">
+            <canvas id="trainingChart"></canvas>
+        </div>
+
+        <button class="export-btn" onclick="exportTrainings()">Export to CSV</button>
+
+        <div class="filters-container">
+            <input type="text" id="searchInput" placeholder="Search trainer/trainee..." class="filter-input">
+            <select id="statusFilter" class="filter-input">
+                <option value="all">All Status</option>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+            </select>
+            <select id="sortFilter" class="filter-input">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="xp-high">Highest XP</option>
+                <option value="xp-low">Lowest XP</option>
+            </select>
+            <input type="date" id="dateFilter" class="filter-input">
+        </div>
 
         <div class="training-grid">
             <% if (trainings && trainings.length > 0) { %>
                 <% trainings.forEach(training => { %>
-                    <div class="training-card">
+                    <div class="training-card" onclick="viewTraining('<%= training._id %>')">
                         <div class="training-info">
                             <div class="training-row">
                                 <strong>Trainer:</strong>
@@ -149,7 +262,7 @@
                                 <span><%= training.xpAmount %></span>
                             </div>
                             <div class="training-row">
-                                <strong>Date Submitted:</strong>
+                                <strong>Date:</strong>
                                 <span><%= new Date(training.dateSubmitted).toLocaleDateString() %></span>
                             </div>
                             <div class="training-row">
@@ -157,7 +270,7 @@
                                 <% if (training.awarded) { %>
                                     <span class="status-badge status-approved">Approved</span>
                                 <% } else if (training.needsApproval) { %>
-                                    <span class="status-badge status-pending">Pending Approval</span>
+                                    <span class="status-badge status-pending">Pending</span>
                                 <% } %>
                             </div>
                         </div>
@@ -169,22 +282,85 @@
                 </div>
             <% } %>
         </div>
+
+        <div class="pagination">
+            <% for(let i = 1; i <= totalPages; i++) { %>
+                <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
+                        onclick="changePage(<%= i %>)">
+                    <%= i %>
+                </button>
+            <% } %>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                item.addEventListener('mouseenter', () => {
-                    item.style.transform = 'translateY(-3px)';
-                    item.style.boxShadow = '0 4px 6px rgba(50, 50, 93, 0.11)';
-                });
-                item.addEventListener('mouseleave', () => {
-                    item.style.transform = 'translateY(0)';
-                    item.style.boxShadow = 'none';
-                });
-            });
+        let trainings = <%- JSON.stringify(trainings) %>;
+        const loading = document.querySelector('.loading');
+
+        // Initialize chart
+        const ctx = document.getElementById('trainingChart').getContext('2d');
+        const trainingChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Will be filled with dates
+                datasets: [{
+                    label: 'XP Awarded',
+                    data: [], // Will be filled with XP amounts
+                    borderColor: '#4299e1',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
         });
+
+        // Filter functionality
+        function applyFilters() {
+            loading.style.display = 'flex';
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+            const date = document.getElementById('dateFilter').value;
+
+            fetch('/forms/alltrainings/filter', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ search, status, sort, date })
+            })
+            .then(res => res.json())
+            .then(data => {
+                trainings = data.trainings;
+                updateTrainingDisplay();
+                loading.style.display = 'none';
+            });
+        }
+
+        // Pagination
+        function changePage(page) {
+            loading.style.display = 'flex';
+            window.location.href = `/forms/alltrainings?page=${page}`;
+        }
+
+        // Export functionality
+        function exportTrainings() {
+            window.location.href = '/forms/alltrainings/export';
+        }
+
+        // View individual training
+        function viewTraining(id) {
+            window.location.href = `/forms/alltrainings/${id}`;
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('sortFilter').addEventListener('change', applyFilters);
+        document.getElementById('dateFilter').addEventListener('change', applyFilters);
     </script>
 </body>
 </html>

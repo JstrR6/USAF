@@ -348,41 +348,74 @@ router.post('/forms/approvals/handle', isAuthenticated, async (req, res) => {
     }
 });
 
-router.get('/forms/alltrainings', isAuthenticated, async (req, res) => {
+router.post('/forms/alltrainings/filter', isAuthenticated, isOfficer, async (req, res) => {
     try {
-        const officerRanks = [
-            'Second Lieutenant',
-            'First Lieutenant',
-            'Captain',
-            'Major',
-            'Lieutenant Colonel',
-            'Colonel',
-            'Brigadier General',
-            'Major General',
-            'Lieutenant General',
-            'General',
-            'General of the Army'
-        ];
+        const { search, status, sort, date } = req.body;
+        let query = {};
 
-        const hasOfficerRole = req.user.roles && req.user.roles.some(role => 
-            officerRanks.includes(role.name)
-        );
-
-        if (!hasOfficerRole) {
-            return res.redirect('/forms');
+        if (search) {
+            query.$or = [
+                { trainer: new RegExp(search, 'i') },
+                { trainees: new RegExp(search, 'i') }
+            ];
         }
 
-        // Fetch all trainings, sorted by date
-        const trainings = await Training.find({})
-            .sort({ dateSubmitted: -1 });
+        if (status !== 'all') {
+            if (status === 'approved') {
+                query.awarded = true;
+            } else if (status === 'pending') {
+                query.needsApproval = true;
+                query.awarded = false;
+            }
+        }
 
-        res.render('forms/alltrainings', {
-            title: 'All Trainings',
-            trainings
-        });
+        if (date) {
+            const filterDate = new Date(date);
+            query.dateSubmitted = {
+                $gte: filterDate,
+                $lt: new Date(filterDate.getTime() + 24 * 60 * 60 * 1000)
+            };
+        }
+
+        let sortOption = {};
+        switch (sort) {
+            case 'oldest':
+                sortOption = { dateSubmitted: 1 };
+                break;
+            case 'xp-high':
+                sortOption = { xpAmount: -1 };
+                break;
+            case 'xp-low':
+                sortOption = { xpAmount: 1 };
+                break;
+            default:
+                sortOption = { dateSubmitted: -1 };
+        }
+
+        const trainings = await Training.find(query).sort(sortOption);
+        res.json({ success: true, trainings });
     } catch (error) {
-        console.error('Error fetching trainings:', error);
-        next(error);
+        res.status(500).json({ success: false, error: 'Error filtering trainings' });
+    }
+});
+
+router.get('/forms/alltrainings/export', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const trainings = await Training.find({});
+        const csv = [
+            'Trainer,Trainees,XP Amount,Status,Date',
+            ...trainings.map(t => {
+                const status = t.awarded ? 'Approved' : (t.needsApproval ? 'Pending' : 'Processing');
+                return `${t.trainer},${t.trainees.join(';')},${t.xpAmount},${status},${t.dateSubmitted}`;
+            })
+        ].join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=trainings.csv');
+        res.send(csv);
+    } catch (error) {
+        console.error('Export error:', error);
+        res.status(500).send('Error exporting trainings');
     }
 });
 
