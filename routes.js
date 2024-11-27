@@ -272,6 +272,82 @@ router.post('/forms/training/submit', isAuthenticated, async (req, res) => {
     }
 });
 
+// Update the approvals route to fetch pending trainings
+router.get('/forms/approvals', isAuthenticated, async (req, res) => {
+    try {
+        const officerRanks = [
+            'Second Lieutenant',
+            'First Lieutenant',
+            'Captain',
+            'Major',
+            'Lieutenant Colonel',
+            'Colonel',
+            'Brigadier General',
+            'Major General',
+            'Lieutenant General',
+            'General',
+            'General of the Army'
+        ];
+
+        const hasOfficerRole = req.user.roles && req.user.roles.some(role => 
+            officerRanks.includes(role.name)
+        );
+
+        if (!hasOfficerRole) {
+            return res.redirect('/forms');
+        }
+
+        // Fetch pending trainings that need approval
+        const trainings = await Training.find({
+            needsApproval: true,
+            awarded: false
+        }).sort({ dateSubmitted: -1 });
+
+        res.render('forms/approvals', {
+            title: 'Pending Approvals',
+            trainings
+        });
+    } catch (error) {
+        console.error('Error fetching approvals:', error);
+        next(error);
+    }
+});
+
+// Add the approval handling route
+router.post('/forms/approvals/handle', isAuthenticated, async (req, res) => {
+    try {
+        const { trainingId, action } = req.body;
+        const training = await Training.findById(trainingId);
+
+        if (!training) {
+            return res.json({ success: false, message: 'Training not found' });
+        }
+
+        if (action === 'approve') {
+            // Update training record
+            training.needsApproval = false;
+            training.awarded = true;
+            await training.save();
+
+            // Award XP to trainees
+            for (const trainee of training.trainees) {
+                await User.findOneAndUpdate(
+                    { username: trainee },
+                    { $inc: { xp: training.xpAmount } }
+                );
+            }
+        } else if (action === 'discard') {
+            // Delete the training record
+            await Training.findByIdAndDelete(trainingId);
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error handling approval:', error);
+        res.status(500).json({ success: false, message: 'Error handling approval' });
+    }
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);
