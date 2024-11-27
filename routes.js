@@ -154,7 +154,7 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
                 const excludedRoles = [
                     'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
                     'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-                    'Non-Commissioned Officers', 'Enlisted Airmen'
+                    'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
                 ];
                 return role?.name && !excludedRoles.includes(role.name);
             });
@@ -180,6 +180,27 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
 router.get('/profile', isAuthenticated, (req, res) => {
     res.render('profile', {
         title: 'Profile'
+    });
+});
+
+// Training Form route
+router.get('/forms/training', isAuthenticated, (req, res) => {
+    res.render('forms/training', {
+        title: 'Training Form'
+    });
+});
+
+// Promotion Form route
+router.get('/forms/promotion', isAuthenticated, (req, res) => {
+    res.render('forms/promotion', {
+        title: 'Promotion Form'
+    });
+});
+
+// Award Form route
+router.get('/forms/award', isAuthenticated, (req, res) => {
+    res.render('forms/award', {
+        title: 'Award Form'
     });
 });
 
