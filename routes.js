@@ -6,6 +6,7 @@ const Training = require('./models/training');
 const Promotion = require('./models/promotion');
 const bot = require('./bot');
 const Placement = require('./models/placement');
+const Unit = require('./models/unit');
 const router = express.Router();
 
 // Middleware to check authentication
@@ -561,6 +562,27 @@ router.post('/forms/placement/submit', isAuthenticated, isOfficer, async (req, r
     } catch (error) {
         console.error('Placement submission error:', error);
         res.status(500).json({ success: false, message: 'Error submitting placement' });
+    }
+});
+
+// Get all units
+router.get('/api/units', isAuthenticated, async (req, res) => {
+    try {
+        const units = await Unit.find().sort({ type: 1, name: 1 });
+        res.json(units);
+    } catch (error) {
+        res.status(500).json({ error: 'Error fetching units' });
+    }
+});
+
+// Create new unit
+router.post('/api/units', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const unit = new Unit(req.body);
+        await unit.save();
+        res.json(unit);
+    } catch (error) {
+        res.status(500).json({ error: 'Error creating unit' });
     }
 });
 

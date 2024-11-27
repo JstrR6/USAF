@@ -22,7 +22,8 @@ const placementSchema = new mongoose.Schema({
             'Section Chief',
             'Non-Commissioned Officer In Charge',
             'Squad Sergeant',
-            'Squad Leader'
+            'Squad Leader',
+            'Soldier'
         ],
         required: true
     },

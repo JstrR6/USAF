@@ -111,6 +111,70 @@
             background: #541170;
             color: black;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            margin: 5% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 1000px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: black;
+        }
+
+        .unit-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(97, 44, 205, 0.1);
+            border-radius: 5px;
+        }
+
+        .unit-list {
+            margin: 10px 0;
+            padding: 10px;
+        }
+
+        .unit-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .unit-item:hover {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .unit-create {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .modal button {
+            width: auto;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 0;
+            color: black;
+        }
     </style>
 </head>
 <body>
@@ -134,7 +198,7 @@
                 <p><strong>Current Placement:</strong> <span id="currentPlacement"></span></p>
             </div>
 
-            <input type="text" id="newPlacement" placeholder="Enter new placement" required>
+            <input type="text" id="newPlacement" placeholder="Enter new placement" readonly required>
 
             <select id="placementRank" required>
                 <option value="">Select Placement Rank</option>
@@ -145,11 +209,66 @@
                 <option value="Non-Commissioned Officer In Charge">Non-Commissioned Officer In Charge</option>
                 <option value="Squad Sergeant">Squad Sergeant</option>
                 <option value="Squad Leader">Squad Leader</option>
+                <option value="Soldier">Soldier</option>
             </select>
 
             <button type="submit">Submit Placement</button>
             <div class="success-message" id="successMessage"></div>
         </form>
+    </div>
+
+    <div id="unitModal" class="modal">
+        <div class="modal-content">
+            <div class="unit-create">
+                <select id="unitType" class="filter-input">
+                    <option value="Corps">Corps</option>
+                    <option value="Division">Division</option>
+                    <option value="Brigade">Brigade</option>
+                    <option value="Battalion">Battalion</option>
+                    <option value="Company">Company</option>
+                    <option value="Platoon">Platoon</option>
+                    <option value="Section">Section</option>
+                    <option value="Squad">Squad</option>
+                </select>
+                <input type="text" id="newUnitName" class="filter-input" placeholder="Unit Name">
+                <button onclick="createUnit()">Create</button>
+            </div>
+
+            <div id="unitsDisplay">
+                <div class="unit-section">
+                    <h3>Corps</h3>
+                    <div id="corpsUnits" class="unit-list"></div>
+                </div>
+                <div class="unit-section">
+                    <h3>Divisions</h3>
+                    <div id="divisionUnits" class="unit-list"></div>
+                </div>
+                <div class="unit-section">
+                    <h3>Brigades</h3>
+                    <div id="brigadeUnits" class="unit-list"></div>
+                </div>
+                <div class="unit-section">
+                    <h3>Battalions</h3>
+                    <div id="battalionUnits" class="unit-list"></div>
+                </div>
+                <div class="unit-section">
+                    <h3>Companies</h3>
+                    <div id="companyUnits" class="unit-list"></div>
+                </div>
+                <div class="unit-section">
+                    <h3>Platoons</h3>
+                    <div id="platoonUnits" class="unit-list"></div>
+                </div>
+                <div class="unit-section">
+                    <h3>Sections</h3>
+                    <div id="sectionUnits" class="unit-list"></div>
+                </div>
+                <div class="unit-section">
+                    <h3>Squads</h3>
+                    <div id="squadUnits" class="unit-list"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -178,9 +297,73 @@
             }
         }
 
+        document.getElementById('newPlacement').addEventListener('click', function() {
+            document.getElementById('unitModal').style.display = 'block';
+            loadUnits();
+        });
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('unitModal')) {
+                document.getElementById('unitModal').style.display = 'none';
+            }
+        }
+
+        async function loadUnits() {
+            try {
+                const response = await fetch('/api/units');
+                const units = await response.json();
+                displayUnits(units);
+            } catch (error) {
+                console.error('Error loading units:', error);
+            }
+        }
+
+        function displayUnits(units) {
+            const types = ['Corps', 'Division', 'Brigade', 'Battalion', 'Company', 'Platoon', 'Section', 'Squad'];
+            types.forEach(type => {
+                const container = document.getElementById(type.toLowerCase() + 'Units');
+                if (container) {
+                    container.innerHTML = '';
+                    const typeUnits = units.filter(u => u.type === type);
+                    typeUnits.forEach(unit => {
+                        const div = document.createElement('div');
+                        div.className = 'unit-item';
+                        div.textContent = unit.name;
+                        div.onclick = () => selectUnit(unit.name);
+                        container.appendChild(div);
+                    });
+                }
+            });
+        }
+
+        async function createUnit() {
+            const type = document.getElementById('unitType').value;
+            const name = document.getElementById('newUnitName').value;
+            
+            try {
+                const response = await fetch('/api/units', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, name })
+                });
+                if (response.ok) {
+                    document.getElementById('newUnitName').value = '';
+                    loadUnits();
+                }
+            } catch (error) {
+                console.error('Error creating unit:', error);
+            }
+        }
+
+        function selectUnit(unitName) {
+            document.getElementById('newPlacement').value = unitName;
+            document.getElementById('unitModal').style.display = 'none';
+        }
+
         document.getElementById('placementForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
             
             try {
                 const response = await fetch('/forms/placement/submit', {
