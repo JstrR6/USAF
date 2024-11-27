@@ -153,11 +153,11 @@
             const trainerUsername = document.getElementById('trainerSearch').value;
             const errorMessage = document.getElementById('errorMessage');
             const trainingForm = document.getElementById('trainingForm');
-            
+    
             try {
-                const response = await fetch(`/api/users/${trainerUsername}`);
+                const response = await fetch(`/forms/training/verify/${trainerUsername}`);
                 const data = await response.json();
-                
+        
                 if (data.success) {
                     document.querySelector('.search-container').style.display = 'none';
                     trainingForm.style.display = 'block';
@@ -166,11 +166,12 @@
                     errorMessage.textContent = 'Trainer not found';
                     errorMessage.style.display = 'block';
                 }
-            } catch (error) {
-                errorMessage.textContent = 'Error finding trainer';
-                errorMessage.style.display = 'block';
+                } catch (error) {
+                    errorMessage.textContent = 'Error finding trainer';
+                    errorMessage.style.display = 'block';
+                    console.error('Error:', error); // This will help debug
+                }
             }
-        }
 
         document.getElementById('trainingForm').addEventListener('submit', async (e) => {
             e.preventDefault();

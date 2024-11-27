@@ -205,6 +205,19 @@ router.get('/forms/award', isAuthenticated, (req, res) => {
     });
 });
 
+router.get('/forms/training/verify/:username', isAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.username });
+        if (user) {
+            res.json({ success: true });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);
