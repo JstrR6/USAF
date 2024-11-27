@@ -234,14 +234,16 @@ router.post('/forms/training/submit', isAuthenticated, async (req, res) => {
             });
         }
 
-        // Create training record
-        const training = {
+        // Create and save the training record
+        const trainingRecord = new Training({
             trainer,
             trainees: traineesList,
             xpAmount,
             needsApproval,
             awarded: !needsApproval
-        };
+        });
+        
+        await trainingRecord.save();
 
         // If doesn't need approval, update XP for trainees
         if (!needsApproval) {
