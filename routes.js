@@ -218,6 +218,58 @@ router.get('/forms/training/verify/:username', isAuthenticated, async (req, res)
     }
 });
 
+router.post('/forms/training/submit', isAuthenticated, async (req, res) => {
+    try {
+        const { trainer, trainees, xpAmount } = req.body;
+        const needsApproval = xpAmount >= 10;
+        
+        // First verify all trainees exist
+        const traineesList = trainees.split(',').map(t => t.trim());
+        const foundTrainees = await User.find({ username: { $in: traineesList } });
+        
+        if (foundTrainees.length !== traineesList.length) {
+            return res.json({ 
+                success: false, 
+                message: 'One or more trainees not found'
+            });
+        }
+
+        // Create training record
+        const training = {
+            trainer,
+            trainees: traineesList,
+            xpAmount,
+            needsApproval,
+            awarded: !needsApproval
+        };
+
+        // If doesn't need approval, update XP for trainees
+        if (!needsApproval) {
+            for (const trainee of traineesList) {
+                await User.findOneAndUpdate(
+                    { username: trainee },
+                    { $inc: { xp: xpAmount } }
+                );
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            needsApproval,
+            message: needsApproval ? 
+                'Training submitted and pending approval (XP ≥ 10)' : 
+                'Training submitted and XP awarded successfully'
+        });
+
+    } catch (error) {
+        console.error('Training submission error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error submitting training' 
+        });
+    }
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);

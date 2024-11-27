@@ -72,6 +72,31 @@
             margin-top: 2rem;
         }
 
+        .success-message, .error-message {
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .success-message {
+            background: rgba(72, 187, 120, 0.2);
+            color: #2f855a;
+            display: none;
+        }
+
+        .error-message {
+            background: rgba(245, 101, 101, 0.2);
+            color: #c53030;
+            display: none;
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
         input, button {
             width: 100%;
             padding: 0.75rem;
@@ -173,39 +198,65 @@
                 }
             }
 
-        document.getElementById('trainingForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const trainees = document.getElementById('trainees').value.split(',').map(t => t.trim());
-            const xpAmount = parseInt(document.getElementById('xpAmount').value);
-            const trainerUsername = document.getElementById('trainerSearch').value;
-            const successMessage = document.getElementById('successMessage');
-            
-            try {
-                const response = await fetch('/api/training/submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        trainer: trainerUsername,
-                        trainees,
-                        xpAmount
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    successMessage.textContent = data.needsApproval ? 
-                        'Training submitted for approval' : 
-                        'Training submitted and XP awarded';
-                    successMessage.style.display = 'block';
-                    document.getElementById('trainingForm').reset();
-                }
-            } catch (error) {
-                errorMessage.textContent = 'Error submitting training';
-                errorMessage.style.display = 'block';
-            }
+            document.getElementById('trainingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const successMessage = document.getElementById('successMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    // Disable submit button and show loading state
+    submitButton.disabled = true;
+    submitButton.textContent = 'Submitting...';
+    
+    try {
+        const response = await fetch('/forms/training/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                trainer: document.getElementById('trainerSearch').value,
+                trainees: document.getElementById('trainees').value,
+                xpAmount: parseInt(document.getElementById('xpAmount').value)
+            })
         });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success message
+            successMessage.textContent = data.message;
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+            
+            // Reset form
+            document.getElementById('trainingForm').reset();
+            
+            // After 3 seconds, reset the form display
+            setTimeout(() => {
+                document.querySelector('.search-container').style.display = 'block';
+                document.getElementById('trainingForm').style.display = 'none';
+                successMessage.style.display = 'none';
+                document.getElementById('trainerSearch').value = '';
+            }, 3000);
+            
+        } else {
+            // Show error message
+            errorMessage.textContent = data.message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+        }
+    } catch (error) {
+        errorMessage.textContent = 'Error submitting training';
+        errorMessage.style.display = 'block';
+        successMessage.style.display = 'none';
+    } finally {
+        // Re-enable submit button
+        submitButton.disabled = false;
+        submitButton.textContent = 'Submit Training';
+    }
+});
     </script>
 </body>
 </html>
