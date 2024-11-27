@@ -500,6 +500,20 @@ router.post('/forms/promotions/handle', isAuthenticated, isOfficer, async (req, 
     }
 });
 
+const officerRanks = [
+    'Second Lieutenant',
+    'First Lieutenant',
+    'Captain',
+    'Major',
+    'Lieutenant Colonel',
+    'Colonel',
+    'Brigadier General',
+    'Major General',
+    'Lieutenant General',
+    'General',
+    'General of the Army'
+];
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);
