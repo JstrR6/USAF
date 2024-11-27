@@ -3,6 +3,7 @@ const passport = require('passport');
 const bcrypt = require('bcrypt');
 const User = require('./models/user');
 const Training = require('./models/training');
+const Promotion = require('./models/promotion');
 const router = express.Router();
 
 // Middleware to check authentication
@@ -379,6 +380,44 @@ router.get('/forms/alltrainings/export', isAuthenticated, isOfficer, async (req,
     } catch (error) {
         console.error('Export error:', error);
         res.status(500).send('Error exporting trainings');
+    }
+});
+
+router.get('/forms/promotion/verify/:username', isAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.username });
+        if (user && user.roles && user.roles.length > 0) {
+            res.json({
+                success: true,
+                username: user.username,
+                currentRank: user.roles[0].name
+            });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Submit promotion request
+router.post('/forms/promotion/submit', isAuthenticated, async (req, res) => {
+    try {
+        const { username, currentRank, promotionRank, reason, submittedBy } = req.body;
+
+        const promotion = new Promotion({
+            username,
+            currentRank,
+            promotionRank,
+            reason,
+            submittedBy
+        });
+
+        await promotion.save();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Promotion submission error:', error);
+        res.status(500).json({ success: false, message: 'Error submitting promotion' });
     }
 });
 
