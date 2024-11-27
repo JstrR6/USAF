@@ -13,7 +13,7 @@ function isAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
-// Middleware to set session roles and highest role
+// Middleware to set session roles and check officer status
 function setSessionRoles(req) {
     if (req.isAuthenticated() && req.user) {
         const excludedRoles = [
@@ -22,30 +22,34 @@ function setSessionRoles(req) {
             'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
         ];
 
-        // Ensure roles exist and are in the correct format
         const userRoles = Array.isArray(req.user.roles) ? req.user.roles : [];
-
-        // Filter out excluded roles and ensure role has a name property
         const filteredRoles = userRoles.filter(role => {
             const roleName = role?.name;
             return roleName && !excludedRoles.includes(roleName);
         });
 
-        // Log all roles from the user object
-        console.log(`All roles for user ${req.user.username}:`, userRoles.map(role => role?.name).filter(Boolean).join(', '));
-        console.log(`Filtered roles for user ${req.user.username}:`, filteredRoles.map(role => role.name).join(', '));
-
-        // Determine the highest role
-        const highestRole = filteredRoles.length > 0 ? filteredRoles[0] : null;
-
-        // Store roles and highest role in session
         req.session.roles = filteredRoles;
-        req.session.highestRole = highestRole ? highestRole.name : 'No role assigned';
-        req.session.highestRoleId = highestRole ? highestRole.id : null;
-
-        // Console log the highest role
-        console.log(`Highest role for user ${req.user.username}:`, req.session.highestRole);
+        req.session.highestRole = filteredRoles.length > 0 ? filteredRoles[0].name : 'No role assigned';
+        req.session.highestRoleId = filteredRoles.length > 0 ? filteredRoles[0].id : null;
     }
+}
+
+// Middleware to check if user is an officer
+function isOfficer(req, res, next) {
+    const officerRanks = [
+        'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+        'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+        'Lieutenant General', 'General', 'General of the Army'
+    ];
+
+    const hasOfficerRole = req.user.roles && req.user.roles.some(role => 
+        officerRanks.includes(role.name)
+    );
+
+    if (hasOfficerRole) {
+        return next();
+    }
+    res.redirect('/forms');
 }
 
 // Middleware to add user data to all routes
@@ -56,6 +60,7 @@ router.use((req, res, next) => {
     next();
 });
 
+// Basic routes
 router.get('/', (req, res) => {
     if (req.isAuthenticated()) {
         res.redirect('/dashboard');
@@ -64,36 +69,25 @@ router.get('/', (req, res) => {
     }
 });
 
-// Render login page
 router.get('/login', (req, res) => {
     if (req.isAuthenticated()) {
         return res.redirect('/dashboard');
     }
-    res.render('login', {
-        title: 'Login'
-    });
+    res.render('login', { title: 'Login' });
 });
 
-// Handle login
 router.post('/login', async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
-        const user = await User.findOne({ username })
-            .populate({
-                path: 'roles',
-                select: 'name id'
-            });
+        const user = await User.findOne({ username }).populate({
+            path: 'roles',
+            select: 'name id'
+        });
 
         if (!user) {
             return res.status(401).send('Access denied: Username not found.');
         }
-
-        // Log user data for debugging
-        console.log('Found user:', {
-            username: user.username,
-            roles: JSON.stringify(user.roles)
-        });
 
         if (!user.password) {
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -118,7 +112,6 @@ router.post('/login', async (req, res, next) => {
     }
 });
 
-// Logout route
 router.get('/logout', (req, res, next) => {
     req.logout((err) => {
         if (err) return next(err);
@@ -126,21 +119,20 @@ router.get('/logout', (req, res, next) => {
     });
 });
 
-// Render dashboard page
+// Main page routes
 router.get('/dashboard', isAuthenticated, (req, res) => {
-    res.render('dashboard', {
-        title: 'Dashboard'
-    });
+    res.render('dashboard', { title: 'Dashboard' });
 });
 
-// Render forms page
 router.get('/forms', isAuthenticated, (req, res) => {
-    res.render('forms', {
-        title: 'Forms'
-    });
+    res.render('forms', { title: 'Forms' });
 });
 
-// Render members page
+router.get('/profile', isAuthenticated, (req, res) => {
+    res.render('profile', { title: 'Profile' });
+});
+
+// Members route
 router.get('/members', isAuthenticated, async (req, res, next) => {
     try {
         const members = await User.find({})
@@ -172,47 +164,19 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             members: formattedMembers
         });
     } catch (err) {
-        console.error('Members error:', err);
         next(err);
     }
 });
 
-// Render profile page
-router.get('/profile', isAuthenticated, (req, res) => {
-    res.render('profile', {
-        title: 'Profile'
-    });
-});
-
-// Training Form route
+// Training routes
 router.get('/forms/training', isAuthenticated, (req, res) => {
-    res.render('forms/training', {
-        title: 'Training Form'
-    });
-});
-
-// Promotion Form route
-router.get('/forms/promotion', isAuthenticated, (req, res) => {
-    res.render('forms/promotion', {
-        title: 'Promotion Form'
-    });
-});
-
-// Award Form route
-router.get('/forms/award', isAuthenticated, (req, res) => {
-    res.render('forms/award', {
-        title: 'Award Form'
-    });
+    res.render('forms/training', { title: 'Training Form' });
 });
 
 router.get('/forms/training/verify/:username', isAuthenticated, async (req, res) => {
     try {
         const user = await User.findOne({ username: req.params.username });
-        if (user) {
-            res.json({ success: true });
-        } else {
-            res.json({ success: false });
-        }
+        res.json({ success: !!user });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -223,18 +187,13 @@ router.post('/forms/training/submit', isAuthenticated, async (req, res) => {
         const { trainer, trainees, xpAmount } = req.body;
         const needsApproval = xpAmount >= 10;
         
-        // First verify all trainees exist
         const traineesList = trainees.split(',').map(t => t.trim());
         const foundTrainees = await User.find({ username: { $in: traineesList } });
         
         if (foundTrainees.length !== traineesList.length) {
-            return res.json({ 
-                success: false, 
-                message: 'One or more trainees not found'
-            });
+            return res.json({ success: false, message: 'One or more trainees not found' });
         }
 
-        // Create and save the training record
         const trainingRecord = new Training({
             trainer,
             trainees: traineesList,
@@ -245,7 +204,6 @@ router.post('/forms/training/submit', isAuthenticated, async (req, res) => {
         
         await trainingRecord.save();
 
-        // If doesn't need approval, update XP for trainees
         if (!needsApproval) {
             for (const trainee of traineesList) {
                 await User.findOneAndUpdate(
@@ -265,39 +223,13 @@ router.post('/forms/training/submit', isAuthenticated, async (req, res) => {
 
     } catch (error) {
         console.error('Training submission error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Error submitting training' 
-        });
+        res.status(500).json({ success: false, message: 'Error submitting training' });
     }
 });
 
-// Update the approvals route to fetch pending trainings
-router.get('/forms/approvals', isAuthenticated, async (req, res) => {
+// Approvals routes
+router.get('/forms/approvals', isAuthenticated, isOfficer, async (req, res) => {
     try {
-        const officerRanks = [
-            'Second Lieutenant',
-            'First Lieutenant',
-            'Captain',
-            'Major',
-            'Lieutenant Colonel',
-            'Colonel',
-            'Brigadier General',
-            'Major General',
-            'Lieutenant General',
-            'General',
-            'General of the Army'
-        ];
-
-        const hasOfficerRole = req.user.roles && req.user.roles.some(role => 
-            officerRanks.includes(role.name)
-        );
-
-        if (!hasOfficerRole) {
-            return res.redirect('/forms');
-        }
-
-        // Fetch pending trainings that need approval
         const trainings = await Training.find({
             needsApproval: true,
             awarded: false
@@ -308,13 +240,11 @@ router.get('/forms/approvals', isAuthenticated, async (req, res) => {
             trainings
         });
     } catch (error) {
-        console.error('Error fetching approvals:', error);
         next(error);
     }
 });
 
-// Add the approval handling route
-router.post('/forms/approvals/handle', isAuthenticated, async (req, res) => {
+router.post('/forms/approvals/handle', isAuthenticated, isOfficer, async (req, res) => {
     try {
         const { trainingId, action } = req.body;
         const training = await Training.findById(trainingId);
@@ -324,12 +254,10 @@ router.post('/forms/approvals/handle', isAuthenticated, async (req, res) => {
         }
 
         if (action === 'approve') {
-            // Update training record
             training.needsApproval = false;
             training.awarded = true;
             await training.save();
 
-            // Award XP to trainees
             for (const trainee of training.trainees) {
                 await User.findOneAndUpdate(
                     { username: trainee },
@@ -337,7 +265,6 @@ router.post('/forms/approvals/handle', isAuthenticated, async (req, res) => {
                 );
             }
         } else if (action === 'discard') {
-            // Delete the training record
             await Training.findByIdAndDelete(trainingId);
         }
 
@@ -345,6 +272,42 @@ router.post('/forms/approvals/handle', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error handling approval:', error);
         res.status(500).json({ success: false, message: 'Error handling approval' });
+    }
+});
+
+// All Trainings routes
+router.get('/forms/alltrainings', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        
+        const [trainings, total] = await Promise.all([
+            Training.find({})
+                .sort({ dateSubmitted: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit),
+            Training.countDocuments(),
+        ]);
+
+        const [totalXPAwarded, pendingApprovals] = await Promise.all([
+            Training.aggregate([
+                { $match: { awarded: true } },
+                { $group: { _id: null, total: { $sum: "$xpAmount" } } }
+            ]),
+            Training.countDocuments({ needsApproval: true, awarded: false })
+        ]);
+
+        res.render('forms/alltrainings', {
+            title: 'All Trainings',
+            trainings,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalTrainings: total,
+            totalXPAwarded: totalXPAwarded[0]?.total || 0,
+            pendingApprovals
+        });
+    } catch (error) {
+        next(error);
     }
 });
 
