@@ -18,14 +18,11 @@ function setSessionRoles(req) {
         const excludedRoles = [
             'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
             'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-            'Non-Commissioned Officers', 'Enlisted', 'Donor'
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
         ];
 
         // Ensure roles exist and are in the correct format
         const userRoles = Array.isArray(req.user.roles) ? req.user.roles : [];
-        
-        // Log raw roles for debugging
-        console.log('Raw user roles:', JSON.stringify(req.user.roles));
 
         // Filter out excluded roles and ensure role has a name property
         const filteredRoles = userRoles.filter(role => {
