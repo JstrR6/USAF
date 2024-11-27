@@ -157,7 +157,7 @@
         <div class="dashboard-header">
             <div class="user-info">
                 <h2>Welcome, <%= user.username %></h2>
-                <span class="user-rank"><%= user.roles[0]?.name || 'No Rank' %></span>
+                <span class="user-rank"><%= highestRole %></span>
             </div>
             <a href="/logout" class="logout-btn">Logout</a>
         </div>
@@ -174,18 +174,18 @@
                 <div class="card-header">
                     <span class="card-title">Experience Points</span>
                 </div>
-                <div class="card-content"><%= user.xp %> XP</div>
+                <div class="card-content"><%= user.xp || 0 %> XP</div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: <%= (user.xp % 100) %>%;"></div>
+                    <div class="progress-fill" style="width: <%= ((user.xp || 0) % 100) %>%;"></div>
                 </div>
-                <div class="card-footer">Next rank at <%= Math.ceil(user.xp/100) * 100 %> XP</div>
+                <div class="card-footer">Next rank at <%= Math.ceil((user.xp || 0)/100) * 100 %> XP</div>
             </div>
 
             <div class="dashboard-card">
                 <div class="card-header">
                     <span class="card-title">Current Role</span>
                 </div>
-                <div class="card-content"><%= user.roles[0]?.name || 'No Role' %></div>
+                <div class="card-content"><%= highestRole %></div>
                 <div class="card-footer">Member since <%= new Date(user.createdAt).toLocaleDateString() %></div>
             </div>
 
