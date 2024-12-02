@@ -392,17 +392,39 @@ router.get('/forms/promotion', isAuthenticated, (req, res) => {
     });
 });
 
-router.get('/forms/promotion/verify/:username', isAuthenticated, async (req, res) => {
+router.get('/forms/promotion/verify/:username', isAuthenticated, isOfficer, async (req, res) => {
     try {
-        const user = await User.findOne({ username: req.params.username });
-        if (user && user.roles && user.roles.length > 0) {
-            res.json({
-                success: true,
-                username: user.username,
-                currentRank: user.roles[0].name
+        const user = await User.findOne({ username: req.params.username })
+            .populate({
+                path: 'roles',
+                select: 'name id'
             });
+
+        if (user && user.roles && user.roles.length > 0) {
+            const excludedRoles = [
+                'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+                'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+                'Non-Commissioned Officers', 'Enlisted', '@everyone'
+            ];
+
+            // Filter out excluded roles and get the highest remaining role
+            const filteredRoles = user.roles.filter(role => 
+                role?.name && !excludedRoles.includes(role.name)
+            );
+
+            const currentRank = filteredRoles.length > 0 ? filteredRoles[0].name : 'None';
+
+            if (currentRank !== 'None') {
+                res.json({
+                    success: true,
+                    username: user.username,
+                    currentRank: currentRank
+                });
+            } else {
+                res.json({ success: false, message: 'No valid rank found' });
+            }
         } else {
-            res.json({ success: false });
+            res.json({ success: false, message: 'User not found' });
         }
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
