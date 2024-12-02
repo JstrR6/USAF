@@ -823,18 +823,38 @@ router.post('/forms/commission/process', isAuthenticated, isOfficer, async (req,
             'Lieutenant General', 'General', 'General of the Army'
         ];
 
-        const isOfficer = user.roles.some(role => 
+        const currentRank = user.roles.find(role => 
             officerRanks.includes(role.name)
-        );
+        )?.name;
 
-        if (isOfficer) {
-            return res.json({
-                success: false,
-                message: 'User Already Commissioned'
-            });
+        if (currentRank) {
+            // If they're an officer, create a pending promotion to next rank
+            const currentRankIndex = officerRanks.indexOf(currentRank);
+            if (currentRankIndex < officerRanks.length - 1) {
+                const promotion = new Promotion({
+                    username: user.username,
+                    currentRank: currentRank,
+                    promotionRank: officerRanks[currentRankIndex + 1],
+                    reason: 'Officer Promotion',
+                    submittedBy: req.user.username,
+                    status: 'pending'
+                });
+
+                await promotion.save();
+
+                return res.json({
+                    success: true,
+                    message: 'Promotion request submitted for approval'
+                });
+            } else {
+                return res.json({
+                    success: false,
+                    message: 'Already at highest officer rank'
+                });
+            }
         }
 
-        // Update their Discord role using the imported function
+        // If not an officer, direct commission to Second Lieutenant
         const discordUpdateSuccess = await bot.updateUserRole(user.discordId, 'Second Lieutenant');
 
         if (!discordUpdateSuccess) {
@@ -844,7 +864,7 @@ router.post('/forms/commission/process', isAuthenticated, isOfficer, async (req,
             });
         }
 
-        // Create promotion record
+        // Create approved promotion record for new commission
         const promotion = new Promotion({
             username: user.username,
             currentRank: user.roles[0]?.name || 'None',
