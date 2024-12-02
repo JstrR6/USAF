@@ -475,40 +475,54 @@ router.get('/forms/promotion', isAuthenticated, (req, res) => {
 
 router.get('/forms/promotion/verify/:username', isAuthenticated, isOfficer, async (req, res) => {
     try {
+        console.log('Searching for username:', req.params.username);
+
         const user = await User.findOne({ username: req.params.username })
             .populate({
                 path: 'roles',
                 select: 'name id'
             });
 
-        if (user && user.roles && user.roles.length > 0) {
-            const excludedRoles = [
-                'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-                'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-                'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
-            ];
+        console.log('Found user:', user);
 
-            // Filter out excluded roles and get the highest remaining role
-            const filteredRoles = user.roles.filter(role => 
-                role?.name && !excludedRoles.includes(role.name)
-            );
-
-            const currentRank = filteredRoles.length > 0 ? filteredRoles[0].name : 'None';
-
-            if (currentRank !== 'None') {
-                res.json({
-                    success: true,
-                    username: user.username,
-                    currentRank: currentRank
-                });
-            } else {
-                res.json({ success: false, message: 'No valid rank found' });
-            }
-        } else {
-            res.json({ success: false, message: 'User not found' });
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
         }
+
+        // Log the raw roles for debugging
+        console.log('User roles before filtering:', user.roles);
+
+        // Filter out excluded roles
+        const excludedRoles = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ];
+
+        // Make sure roles is an array and handle null/undefined roles
+        const roles = Array.isArray(user.roles) ? user.roles : [];
+        
+        const filteredRoles = roles.filter(role => 
+            role && role.name && !excludedRoles.includes(role.name)
+        );
+
+        console.log('Filtered roles:', filteredRoles);
+
+        const currentRank = filteredRoles.length > 0 ? filteredRoles[0].name : 'None';
+        console.log('Current rank:', currentRank);
+
+        return res.json({
+            success: true,
+            username: user.username,
+            currentRank: currentRank
+        });
+
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error in promotion verify:', error);
+        return res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
 });
 
