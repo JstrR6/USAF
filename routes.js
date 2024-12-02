@@ -7,6 +7,7 @@ const Promotion = require('./models/promotion');
 const bot = require('./bot');
 const Placement = require('./models/placement');
 const Unit = require('./models/unit');
+const Award = require('./models/award');
 const router = express.Router();
 
 // Middleware to check authentication
