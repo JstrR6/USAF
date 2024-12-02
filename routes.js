@@ -5,6 +5,7 @@ const User = require('./models/user');
 const Training = require('./models/training');
 const Promotion = require('./models/promotion');
 const bot = require('./bot');
+const { updateUserRole } = require('./bot');
 const Placement = require('./models/placement');
 const Unit = require('./models/unit');
 const Award = require('./models/award');
@@ -833,8 +834,8 @@ router.post('/forms/commission/process', isAuthenticated, isOfficer, async (req,
             });
         }
 
-        // Update their Discord role
-        const discordUpdateSuccess = await updateUserRole(user.discordId, 'Second Lieutenant');
+        // Update their Discord role using the imported function
+        const discordUpdateSuccess = await bot.updateUserRole(user.discordId, 'Second Lieutenant');
 
         if (!discordUpdateSuccess) {
             return res.json({
