@@ -791,6 +791,84 @@ router.post('/forms/awards/handle', isAuthenticated, isOfficer, async (req, res)
     }
 });
 
+router.get('/forms/commission', isAuthenticated, isOfficer, (req, res) => {
+    res.render('forms/commission', {
+        title: 'Commission Form'
+    });
+});
+
+// Process commission
+router.post('/forms/commission/process', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const { username } = req.body;
+
+        const user = await User.findOne({ username })
+            .populate({
+                path: 'roles',
+                select: 'name id'
+            });
+
+        if (!user) {
+            return res.json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        // Check if user is already an officer
+        const officerRanks = [
+            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+            'Lieutenant General', 'General', 'General of the Army'
+        ];
+
+        const isOfficer = user.roles.some(role => 
+            officerRanks.includes(role.name)
+        );
+
+        if (isOfficer) {
+            return res.json({
+                success: false,
+                message: 'User Already Commissioned'
+            });
+        }
+
+        // Update their Discord role
+        const discordUpdateSuccess = await updateUserRole(user.discordId, 'Second Lieutenant');
+
+        if (!discordUpdateSuccess) {
+            return res.json({
+                success: false,
+                message: 'Error updating Discord role'
+            });
+        }
+
+        // Create promotion record
+        const promotion = new Promotion({
+            username: user.username,
+            currentRank: user.roles[0]?.name || 'None',
+            promotionRank: 'Second Lieutenant',
+            reason: 'Officer Commission',
+            submittedBy: req.user.username,
+            status: 'approved'
+        });
+
+        await promotion.save();
+
+        res.json({
+            success: true,
+            message: 'User successfully commissioned to Second Lieutenant'
+        });
+
+    } catch (error) {
+        console.error('Commission error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error processing commission'
+        });
+    }
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);
