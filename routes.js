@@ -528,12 +528,17 @@ router.get('/forms/placement/verify/:username', isAuthenticated, isOfficer, asyn
     try {
         const user = await User.findOne({ username: req.params.username });
         if (user) {
-            // You might want to add a currentPlacement field to your User model
-            // or handle it differently based on your needs
+            // Fetch the most recent placement for this user
+            const currentPlacement = await Placement.findOne(
+                { username: user.username, status: 'approved' },
+                {},
+                { sort: { 'dateSubmitted': -1 } }
+            );
+            
             res.json({
                 success: true,
                 username: user.username,
-                currentPlacement: user.currentPlacement || 'None'
+                currentPlacement: currentPlacement ? `${currentPlacement.newPlacement} - ${currentPlacement.placementRank}` : 'None'
             });
         } else {
             res.json({ success: false });
@@ -554,14 +559,17 @@ router.post('/forms/placement/submit', isAuthenticated, isOfficer, async (req, r
             newPlacement,
             placementRank,
             submittedBy,
-            status: 'pending'
+            status: 'approved'  // Auto-approve since officer submitted
         });
 
         await placement.save();
         res.json({ success: true });
     } catch (error) {
         console.error('Placement submission error:', error);
-        res.status(500).json({ success: false, message: 'Error submitting placement' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error submitting placement' 
+        });
     }
 });
 

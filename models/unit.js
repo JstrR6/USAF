@@ -7,7 +7,7 @@ const unitSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['Corps', 'Division', 'Brigade', 'Battalion', 'Company', 'Platoon', 'Section', 'Squad'],
+        enum: ['Army', 'Corps', 'Division', 'Brigade', 'Battalion', 'Company', 'Platoon', 'Section', 'Squad'],
         required: true
     },
     parent: {

@@ -37,8 +37,8 @@ const placementSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
-        default: 'pending'
+        enum: ['pending', 'approved'],
+        default: 'approved'
     }
 });
 
