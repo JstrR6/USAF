@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USM Award Form</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .award-container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        .award-form {
+            display: none;
+        }
+
+        .search-container input,
+        .award-form input,
+        .award-form select,
+        .award-form textarea {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: black;
+        }
+
+        .award-form textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            background: #4299e1;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #3182ce;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #51cf66;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            color: black;
+        }
+
+        select option {
+            background: #541170;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="award-container">
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
+        <div class="search-container">
+            <input type="text" id="usernameSearch" placeholder="Enter username">
+            <button onclick="findUser()">Find</button>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <form id="awardForm" class="award-form">
+            <div class="user-info">
+                <p><strong>Username:</strong> <span id="displayUsername"></span></p>
+            </div>
+
+            <select id="awardType" required>
+                <option value="">Select Award</option>
+                <option value="Medal of Honor">Medal of Honor</option>
+                <option value="Distinguished Service Cross">Distinguished Service Cross</option>
+                <option value="Distinguished Service Medal">Distinguished Service Medal</option>
+                <option value="Silver Star">Silver Star</option>
+                <option value="Legion of Merit">Legion of Merit</option>
+                <option value="Distinguished Flying Cross">Distinguished Flying Cross</option>
+                <option value="Bronze Star Medal">Bronze Star Medal</option>
+                <option value="Purple Heart">Purple Heart</option>
+                <option value="Air Medal">Air Medal</option>
+                <option value="Army Commendation Medal">Army Commendation Medal</option>
+                <option value="Army Achievement Medal">Army Achievement Medal</option>
+                <option value="Valorous Unit Award">Valorous Unit Award</option>
+                <option value="Good Conduct Medal">Good Conduct Medal</option>
+                <option value="Soldier's Medal">Soldier's Medal</option>
+                <option value="Supreme Leadership Medal">Supreme Leadership Medal</option>
+                <option value="Command Excellence Medal">Command Excellence Medal</option>
+                <option value="Strategic Valor Medal">Strategic Valor Medal</option>
+                <option value="Distinguished Field Service Medal">Distinguished Field Service Medal</option>
+                <option value="Meritorious Leadership Medal">Meritorious Leadership Medal</option>
+                <option value="General Officer Excellence Medal">General Officer Excellence Medal</option>
+                <option value="Field Grade Officer Service Medal">Field Grade Officer Service Medal</option>
+                <option value="Officer Commissioning Medal">Officer Commissioning Medal</option>
+                <option value="SNCO Leadership Medal">SNCO Leadership Medal</option>
+                <option value="NCO Advancement Medal">NCO Advancement Medal</option>
+            </select>
+
+            <textarea id="awardReason" placeholder="Enter reason for award" required></textarea>
+
+            <button type="submit">Submit Award Request</button>
+            <div class="success-message" id="successMessage"></div>
+        </form>
+    </div>
+
+    <script>
+        async function findUser() {
+            const username = document.getElementById('usernameSearch').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const awardForm = document.getElementById('awardForm');
+            
+            try {
+                const response = await fetch(`/forms/award/verify/${username}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.querySelector('.search-container').style.display = 'none';
+                    awardForm.style.display = 'block';
+                    document.getElementById('displayUsername').textContent = data.username;
+                    errorMessage.style.display = 'none';
+                } else {
+                    errorMessage.textContent = 'User not found';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error finding user';
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        document.getElementById('awardForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                const response = await fetch('/forms/award/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: document.getElementById('displayUsername').textContent,
+                        award: document.getElementById('awardType').value,
+                        reason: document.getElementById('awardReason').value,
+                        submittedBy: '<%= user.username %>'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    successMessage.textContent = 'Award request submitted successfully';
+                    successMessage.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/forms';
+                    }, 2000);
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error submitting award request';
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

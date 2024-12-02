@@ -616,6 +616,86 @@ router.post('/api/units', isAuthenticated, isOfficer, async (req, res) => {
     }
 });
 
+// Award Form route
+router.get('/forms/award', isAuthenticated, (req, res) => {
+    res.render('forms/award', {
+        title: 'Award Form'
+    });
+});
+
+// Verify user for award
+router.get('/forms/award/verify/:username', isAuthenticated, async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.username });
+        if (user) {
+            res.json({
+                success: true,
+                username: user.username
+            });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Submit award request
+router.post('/forms/award/submit', isAuthenticated, async (req, res) => {
+    try {
+        const { username, award, reason, submittedBy } = req.body;
+
+        const awardRecord = new Award({
+            username,
+            award,
+            reason,
+            submittedBy
+        });
+
+        await awardRecord.save();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Award submission error:', error);
+        res.status(500).json({ success: false, message: 'Error submitting award' });
+    }
+});
+
+// Pending Awards route (officers only)
+router.get('/forms/pendingawards', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const awards = await Award.find({ status: 'pending' })
+            .sort({ dateSubmitted: -1 });
+
+        res.render('forms/pendingawards', {
+            title: 'Pending Awards',
+            awards
+        });
+    } catch (error) {
+        console.error('Error fetching pending awards:', error);
+        next(error);
+    }
+});
+
+// Handle award approval/rejection
+router.post('/forms/awards/handle', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const { awardId, action } = req.body;
+        const award = await Award.findById(awardId);
+
+        if (!award) {
+            return res.json({ success: false, message: 'Award request not found' });
+        }
+
+        award.status = action === 'approve' ? 'approved' : 'rejected';
+        await award.save();
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error handling award:', error);
+        res.status(500).json({ success: false, message: 'Error handling award' });
+    }
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);

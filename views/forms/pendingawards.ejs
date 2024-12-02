@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USM Pending Awards</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .awards-container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .award-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            color: black;
+        }
+
+        .award-info {
+            margin-bottom: 1rem;
+        }
+
+        .award-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .reason-text {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+            white-space: pre-wrap;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .approve-btn, .reject-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .approve-btn {
+            background: #48bb78;
+            color: white;
+        }
+
+        .reject-btn {
+            background: #f56565;
+            color: white;
+        }
+
+        .approve-btn:hover {
+            background: #38a169;
+        }
+
+        .reject-btn:hover {
+            background: #e53e3e;
+        }
+
+        .no-awards {
+            text-align: center;
+            color: black;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.3s forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="awards-container">
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
+        <div class="awards-list">
+            <% if (awards && awards.length > 0) { %>
+                <% awards.forEach(award => { %>
+                    <div class="award-card" id="award-<%= award._id %>">
+                        <div class="award-info">
+                            <div class="award-row">
+                                <strong>Username:</strong>
+                                <span><%= award.username %></span>
+                            </div>
+                            <div class="award-row">
+                                <strong>Award:</strong>
+                                <span><%= award.award %></span>
+                            </div>
+                            <div class="award-row">
+                                <strong>Submitted By:</strong>
+                                <span><%= award.submittedBy %></span>
+                            </div>
+                            <div class="award-row">
+                                <strong>Date Submitted:</strong>
+                                <span><%= new Date(award.dateSubmitted).toLocaleDateString() %></span>
+                            </div>
+                            <div class="reason-text">
+                                <strong>Reason:</strong><br>
+                                <%= award.reason %>
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button class="approve-btn" onclick="handleAward('<%= award._id %>', 'approve')">
+                                Approve
+                            </button>
+                            <button class="reject-btn" onclick="handleAward('<%= award._id %>', 'reject')">
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="no-awards">
+                    <h3>No pending award requests</h3>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        async function handleAward(awardId, action) {
+            try {
+                const response = await fetch('/forms/awards/handle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        awardId,
+                        action
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    const card = document.getElementById(`award-${awardId}`);
+                    card.classList.add('fade-out');
+                    setTimeout(() => {
+                        card.remove();
+                        // Check if no more awards
+                        const remainingCards = document.querySelectorAll('.award-card');
+                        if (remainingCards.length === 0) {
+                            document.querySelector('.awards-list').innerHTML = `
+                                <div class="no-awards">
+                                    <h3>No pending award requests</h3>
+                                </div>
+                            `;
+                        }
+                    }, 300);
+                }
+            } catch (error) {
+                console.error('Error handling award:', error);
+            }
+        }
+    </script>
+</body>
+</html>
