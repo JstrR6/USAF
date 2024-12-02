@@ -142,29 +142,45 @@ router.get('/profile', isAuthenticated, async (req, res) => {
                 select: 'name id'
             });
 
-        // Get latest approved placement
+        // Get current placement
         const currentPlacement = await Placement.findOne(
-            { 
-                username: user.username,
-                status: 'approved'
-            },
+            { username: user.username, status: 'approved' },
             {},
             { sort: { 'dateSubmitted': -1 } }
         );
 
-        // Get all approved awards
-        const approvedAwards = await Award.find({ 
+        // Get all training records
+        const trainingsAsTrainer = await Training.find({
+            trainer: user.username,
+            awarded: true
+        }).sort({ dateSubmitted: -1 });
+
+        const trainingsAsTrainee = await Training.find({
+            trainees: user.username,
+            awarded: true
+        }).sort({ dateSubmitted: -1 });
+
+        // Get promotion history
+        const promotions = await Promotion.find({
             username: user.username,
             status: 'approved'
         }).sort({ dateSubmitted: -1 });
 
-        // Count awards
+        // Get awards with full details
+        const awards = await Award.find({
+            username: user.username,
+            status: 'approved'
+        }).sort({ dateSubmitted: -1 });
+
+        // Calculate award counts
         const awardCounts = {};
-        approvedAwards.forEach(award => {
+        let totalAwards = 0;
+        awards.forEach(award => {
             awardCounts[award.award] = (awardCounts[award.award] || 0) + 1;
+            totalAwards++;
         });
 
-        // Filter excluded roles
+        // Filter roles
         const excludedRoles = [
             'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
             'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
@@ -177,12 +193,23 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 
         const currentRank = filteredRoles.length > 0 ? filteredRoles[0].name : 'No Rank';
 
+        // Calculate training statistics
+        const trainingStats = {
+            totalAsTrainer: trainingsAsTrainer.length,
+            totalAsTrainee: trainingsAsTrainee.length,
+            xpEarned: trainingsAsTrainee.reduce((sum, t) => sum + t.xpAmount, 0)
+        };
+
         res.render('profile', {
             title: 'Profile',
-            user: user,
-            currentRank: currentRank,
+            user,
+            currentRank,
             placement: currentPlacement,
-            awards: awardCounts
+            awards,
+            awardCounts,
+            totalAwards,
+            promotions,
+            trainingStats
         });
     } catch (error) {
         console.error('Profile error:', error);

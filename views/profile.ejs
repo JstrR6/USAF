@@ -80,6 +80,38 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        .history-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-date {
+            font-size: 0.9rem;
+            color: rgba(0, 0, 0, 0.7);
+        }
+
+        .training-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0.5rem 0;
+        }
+
         .medals-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -122,10 +154,6 @@
             <h2 class="section-title">Basic Information</h2>
             <div class="info-row">
                 <strong>Rank:</strong>
-                <span><%= highestRole %></span>
-            </div>
-            <div class="info-row">
-                <strong>Rank:</strong>
                 <span><%= currentRank %></span>
             </div>
             <div class="info-row">
@@ -138,23 +166,79 @@
                     <% } %>
                 </span>
             </div>
+            <div class="info-row">
+                <strong>Total XP:</strong>
+                <span><%= user.xp || 0 %></span>
+            </div>
         </div>
 
         <div class="profile-section">
-            <h2 class="section-title">Medals and Awards</h2>
-            <% if (Object.keys(awards).length > 0) { %>
-                <div class="medals-grid">
-                    <% Object.entries(awards).forEach(([award, count]) => { %>
-                        <div class="medal-item">
-                            <span><%= award %></span>
-                            <% if (count > 1) { %>
-                                <span class="count-badge">x<%= count %></span>
-                            <% } %>
-                        </div>
-                    <% }); %>
+            <h2 class="section-title">Training Record</h2>
+            <div class="training-stats">
+                <div class="stat-card">
+                    <div>As Trainer</div>
+                    <div class="stat-number"><%= trainingStats.totalAsTrainer %></div>
+                    <div>Sessions</div>
                 </div>
+                <div class="stat-card">
+                    <div>As Trainee</div>
+                    <div class="stat-number"><%= trainingStats.totalAsTrainee %></div>
+                    <div>Sessions</div>
+                </div>
+                <div class="stat-card">
+                    <div>XP Earned</div>
+                    <div class="stat-number"><%= trainingStats.xpEarned %></div>
+                    <div>From Training</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h2 class="section-title">Promotion History</h2>
+            <% if (promotions && promotions.length > 0) { %>
+                <% promotions.forEach(promotion => { %>
+                    <div class="history-item">
+                        <div>Promoted to <%= promotion.promotionRank %></div>
+                        <div class="history-date">
+                            <%= new Date(promotion.dateSubmitted).toLocaleDateString() %>
+                        </div>
+                    </div>
+                <% }); %>
             <% } else { %>
-                <p>No medals awarded yet</p>
+                <p>No promotion history</p>
+            <% } %>
+        </div>
+
+        <div class="profile-section">
+            <h2 class="section-title">Awards (<%= totalAwards %> Total)</h2>
+            <div class="medals-grid">
+                <% Object.entries(awardCounts).forEach(([award, count]) => { %>
+                    <div class="medal-item">
+                        <span><%= award %></span>
+                        <% if (count > 1) { %>
+                            <span class="count-badge">x<%= count %></span>
+                        <% } %>
+                    </div>
+                <% }); %>
+            </div>
+
+            <h3 class="section-title" style="margin-top: 1.5rem;">Awards History</h3>
+            <% if (awards && awards.length > 0) { %>
+                <% awards.forEach(award => { %>
+                    <div class="history-item">
+                        <div><%= award.award %></div>
+                        <div class="history-date">
+                            Awarded: <%= new Date(award.dateSubmitted).toLocaleDateString() %>
+                        </div>
+                        <% if (award.reason) { %>
+                            <div style="margin-top: 0.5rem; font-style: italic;">
+                                <%= award.reason %>
+                            </div>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <p>No awards history</p>
             <% } %>
         </div>
     </div>
