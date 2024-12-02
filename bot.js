@@ -127,36 +127,81 @@ async function updateUserRole(discordId, newRank) {
             return false;
         }
 
-        // Remove old rank roles
-        const rankRoles = member.roles.cache.filter(role => {
+        // Define rank categories
+        const rankCategories = {
+            'Citizen': [],
+            'Private': ['Enlisted', 'Enlisted Personnel'],
+            'Private First Class': ['Enlisted', 'Enlisted Personnel'],
+            'Specialist': ['Enlisted', 'Enlisted Personnel'],
+            'Corporal': ['Enlisted', 'Enlisted Personnel'],
+            'Sergeant': ['Non-Commissioned Officers', 'Enlisted Personnel'],
+            'Staff Sergeant': ['Non-Commissioned Officers', 'Enlisted Personnel'],
+            'Sergeant First Class': ['Non-Commissioned Officers', 'Enlisted Personnel'],
+            'Master Sergeant': ['Non-Commissioned Officers', 'Enlisted Personnel'],
+            'First Sergeant': ['Non-Commissioned Officers', 'Enlisted Personnel'],
+            'Sergeant Major': ['Senior Non-Commissioned Officers', 'Enlisted Personnel'],
+            'Command Sergeant Major': ['Senior Non-Commissioned Officers', 'Enlisted Personnel'],
+            'Sergeant Major of the Army': ['Senior Non-Commissioned Officers', 'Enlisted Personnel'],
+            'Second Lieutenant': ['Commissioned Officers', 'Company Grade Officers'],
+            'First Lieutenant': ['Commissioned Officers', 'Company Grade Officers'],
+            'Captain': ['Commissioned Officers', 'Company Grade Officers'],
+            'Major': ['Commissioned Officers', 'Field Grade Officers'],
+            'Lieutenant Colonel': ['Commissioned Officers', 'Field Grade Officers'],
+            'Colonel': ['Commissioned Officers', 'Field Grade Officers'],
+            'Brigadier General': ['Commissioned Officers', 'General Grade Officers'],
+            'Major General': ['Commissioned Officers', 'General Grade Officers'],
+            'Lieutenant General': ['Commissioned Officers', 'General Grade Officers'],
+            'General': ['Commissioned Officers', 'General Grade Officers'],
+            'General of the Army': ['Commissioned Officers', 'General Grade Officers']
+        };
+
+        // All possible categories to remove
+        const allCategories = [
+            'Enlisted',
+            'Non-Commissioned Officers',
+            'Senior Non-Commissioned Officers',
+            'Enlisted Personnel',
+            'Company Grade Officers',
+            'Field Grade Officers',
+            'General Grade Officers',
+            'Commissioned Officers'
+        ];
+
+        // Remove all current rank roles and categories
+        const rolesToRemove = member.roles.cache.filter(role => {
             const roleName = role.name;
-            return [
-                'Private', 'Private First Class', 'Specialist', 'Corporal',
-                'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
-                'Master Sergeant', 'First Sergeant', 'Sergeant Major',
-                'Command Sergeant Major', 'Sergeant Major of the Army',
-                'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-                'Lieutenant Colonel', 'Colonel', 'Brigadier General',
-                'Major General', 'Lieutenant General', 'General', 'General of the Army'
-            ].includes(roleName);
+            return Object.keys(rankCategories).includes(roleName) || 
+                   allCategories.includes(roleName);
         });
 
-        for (const [_, role] of rankRoles) {
+        for (const [_, role] of rolesToRemove) {
             await member.roles.remove(role);
         }
 
         // Add new rank role
-        const newRole = guild.roles.cache.find(role => role.name === newRank);
-        if (newRole) {
-            await member.roles.add(newRole);
-            console.log(`Updated ${member.user.username}'s role to ${newRank}`);
-            return true;
+        const newRankRole = guild.roles.cache.find(role => role.name === newRank);
+        if (newRankRole) {
+            await member.roles.add(newRankRole);
         } else {
-            console.log(`Role ${newRank} not found`);
+            console.log(`Rank role ${newRank} not found`);
             return false;
         }
+
+        // Add category roles
+        const categoriesToAdd = rankCategories[newRank] || [];
+        for (const category of categoriesToAdd) {
+            const categoryRole = guild.roles.cache.find(role => role.name === category);
+            if (categoryRole) {
+                await member.roles.add(categoryRole);
+            } else {
+                console.log(`Category role ${category} not found`);
+            }
+        }
+
+        console.log(`Updated ${member.user.username}'s role to ${newRank} with categories:`, categoriesToAdd);
+        return true;
     } catch (error) {
-        console.error('Error updating Discord role:', error);
+        console.error('Error updating Discord roles:', error);
         return false;
     }
 }
