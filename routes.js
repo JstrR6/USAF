@@ -817,7 +817,7 @@ router.post('/forms/commission/process', isAuthenticated, isOfficer, async (req,
 
         // Check if user is already an officer
         const officerRanks = [
-            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+            'First Lieutenant', 'Captain', 'Major',
             'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
             'Lieutenant General', 'General', 'General of the Army'
         ];
