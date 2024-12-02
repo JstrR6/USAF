@@ -473,7 +473,7 @@ router.get('/forms/promotion', isAuthenticated, (req, res) => {
     });
 });
 
-router.get('/forms/promotion/verify/:username', isAuthenticated, isOfficer, async (req, res) => {
+router.get('/forms/promotion/verify/:username', isAuthenticated, async (req, res) => {
     try {
         console.log('Searching for username:', req.params.username);
 
