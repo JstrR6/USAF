@@ -133,8 +133,61 @@ router.get('/forms', isAuthenticated, (req, res) => {
     res.render('forms', { title: 'Forms' });
 });
 
-router.get('/profile', isAuthenticated, (req, res) => {
-    res.render('profile', { title: 'Profile' });
+router.get('/profile', isAuthenticated, async (req, res) => {
+    try {
+        // Get user data with roles
+        const user = await User.findById(req.user._id)
+            .populate({
+                path: 'roles',
+                select: 'name id'
+            });
+
+        // Get latest approved placement
+        const currentPlacement = await Placement.findOne(
+            { 
+                username: user.username,
+                status: 'approved'
+            },
+            {},
+            { sort: { 'dateSubmitted': -1 } }
+        );
+
+        // Get all approved awards
+        const approvedAwards = await Award.find({ 
+            username: user.username,
+            status: 'approved'
+        }).sort({ dateSubmitted: -1 });
+
+        // Count awards
+        const awardCounts = {};
+        approvedAwards.forEach(award => {
+            awardCounts[award.award] = (awardCounts[award.award] || 0) + 1;
+        });
+
+        // Filter excluded roles
+        const excludedRoles = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ];
+
+        const filteredRoles = user.roles.filter(role => 
+            role?.name && !excludedRoles.includes(role.name)
+        );
+
+        const currentRank = filteredRoles.length > 0 ? filteredRoles[0].name : 'No Rank';
+
+        res.render('profile', {
+            title: 'Profile',
+            user: user,
+            currentRank: currentRank,
+            placement: currentPlacement,
+            awards: awardCounts
+        });
+    } catch (error) {
+        console.error('Profile error:', error);
+        next(error);
+    }
 });
 
 // Members route
