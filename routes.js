@@ -226,32 +226,38 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
         const limit = 10;
         const skip = (page - 1) * limit;
 
+        // Fetch total member count
         const totalMembers = await User.countDocuments();
 
-        const members = await User.find({})
+        // Fetch all members with pagination
+        const users = await User.find({})
+            .skip(skip)
+            .limit(limit)
             .populate({
                 path: 'roles',
-                select: 'name id'
+                select: 'name'
             });
 
-        const excludedRoles = [
-            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
-        ];
+        // Fetch the latest placements for all members
+        const placements = await Placement.aggregate([
+            { $match: { status: 'approved' } },
+            { $sort: { dateSubmitted: -1 } },
+            { $group: { _id: '$username', latestPlacement: { $first: '$newPlacement' } } }
+        ]);
 
-        const formattedMembers = members.map(member => {
-            const userRoles = (member.roles || []).filter(role => {
-                return role?.name && !excludedRoles.includes(role.name);
-            });
+        // Create a map of placements for quick lookup
+        const placementMap = placements.reduce((map, placement) => {
+            map[placement._id] = placement.latestPlacement;
+            return map;
+        }, {});
 
-            return {
-                username: member.username,
-                highestRole: userRoles.length > 0 ? userRoles[0].name : 'No role assigned',
-                xp: member.xp || 0,
-                placement: member.placement || 'Not Assigned'
-            };
-        });
+        // Format members with placement data
+        const formattedMembers = users.map(user => ({
+            username: user.username,
+            highestRole: (user.roles || [])[0]?.name || 'No role assigned',
+            xp: user.xp || 0,
+            placement: placementMap[user.username] || 'Not Assigned'
+        }));
 
         const officerRanks = [
             'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
@@ -259,9 +265,7 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             'Lieutenant General', 'General', 'General of the Army'
         ];
 
-        const isOfficer = req.user.roles.some(role => 
-            officerRanks.includes(role.name)
-        );
+        const isOfficer = req.user.roles.some(role => officerRanks.includes(role.name));
 
         res.render('members', {
             title: 'Members',
@@ -272,7 +276,7 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             officerRanks // Pass ranks for filter dropdown
         });
     } catch (err) {
-        console.error('Members error:', err);
+        console.error('Error loading members:', err);
         next(err);
     }
 });
