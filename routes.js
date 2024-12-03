@@ -301,13 +301,13 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
                 : { $lt: thirtyDaysAgo };
         }
 
-        // Fetch members based on the filters
-        const members = await User.find(query).populate({
+        // Fetch users based on the query
+        const users = await User.find(query).populate({
             path: 'roles',
             select: 'name'
         });
 
-        // Fetch latest placements for all members
+        // Fetch latest placements for all users
         const placements = await Placement.aggregate([
             { $match: { status: 'approved' } },
             { $sort: { dateSubmitted: -1 } },
@@ -319,12 +319,21 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
             return map;
         }, {});
 
-        // Format members with their latest placements
-        const formattedMembers = members.map(member => ({
-            username: member.username,
-            highestRole: member.roles?.[0]?.name || 'No role assigned',
-            xp: member.xp || 0,
-            placement: placementMap[member.username] || 'Not Assigned'
+        // Filter users by placement if a placement filter is applied
+        let filteredUsers = users;
+        if (placement) {
+            filteredUsers = users.filter(user => {
+                const userPlacement = placementMap[user.username] || 'Not Assigned';
+                return userPlacement === placement;
+            });
+        }
+
+        // Format users with their placements
+        const formattedUsers = filteredUsers.map(user => ({
+            username: user.username,
+            highestRole: user.roles?.[0]?.name || 'No role assigned',
+            xp: user.xp || 0,
+            placement: placementMap[user.username] || 'Not Assigned'
         }));
 
         // Rank sorting
@@ -340,14 +349,14 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
                 'General of the Army'
             ];
 
-            formattedMembers.sort((a, b) => {
+            formattedUsers.sort((a, b) => {
                 const aRank = rankOrder.indexOf(a.highestRole);
                 const bRank = rankOrder.indexOf(b.highestRole);
                 return rank === 'asc' ? aRank - bRank : bRank - aRank;
             });
         }
 
-        res.json({ success: true, members: formattedMembers });
+        res.json({ success: true, members: formattedUsers });
     } catch (error) {
         console.error('Error fetching members with placements:', error);
         res.status(500).json({ success: false, error: error.message });
