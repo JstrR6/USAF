@@ -9,6 +9,7 @@ const { updateUserRole } = require('./bot');
 const Placement = require('./models/placement');
 const Unit = require('./models/unit');
 const Award = require('./models/award');
+const UserNote = require('./models/usernote');
 const router = express.Router();
 
 // Middleware to check authentication
