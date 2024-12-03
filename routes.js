@@ -154,8 +154,7 @@ function calculateProgress(currentXP) {
 }
 
 // Main page routes
-router.get('/dashboard', isAuthenticated, (req, res) => {
-    res.render('dashboard', { title: 'Dashboard' });
+router.get('/dashboard', isAuthenticated, async (req, res) => {
     try {
         const user = await User.findById(req.session.userId);
         if (!user) return res.redirect('/login');
@@ -164,6 +163,7 @@ router.get('/dashboard', isAuthenticated, (req, res) => {
         const nextRankXP = nextRank ? nextRank.xp : user.xp;
 
         res.render('dashboard', {
+            title: 'Dashboard',
             user,
             nextRankXP,
             calculateProgress: calculateProgress(user.xp)

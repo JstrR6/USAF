@@ -8,7 +8,7 @@ const User = require('./models/user');
 const routes = require('./routes');
 const app = express();
 const flash = require('connect-flash');
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
 // Serve static files from the public directory
 app.use(express.static('public'));
