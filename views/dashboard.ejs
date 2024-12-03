@@ -197,7 +197,6 @@
     </div>
 
     <script>
-        // Animate progress bars on page load
         document.addEventListener('DOMContentLoaded', () => {
             const progressFill = document.querySelector('.progress-fill');
             const xp = parseInt(progressFill.getAttribute('data-xp'), 10);
@@ -206,7 +205,6 @@
             // Calculate progress dynamically
             const progress = Math.min(Math.max((xp / nextRankXP) * 100, 0), 100);
             progressFill.style.width = `${progress}%`;
-        });
 
             // Add hover effects to nav items
             const navItems = document.querySelectorAll('.nav-item');
