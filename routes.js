@@ -285,7 +285,7 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
 
         // Username filter
         if (username) {
-            query.username = new RegExp(username, 'i');
+            query.username = { $regex: username, $options: 'i' }; // Case-insensitive search
         }
 
         // Specific rank filter
@@ -295,39 +295,59 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
 
         // Placement filter
         if (placement) {
-            const latestPlacements = await Placement.find({ 
-                status: 'approved', 
-                'placement.unit': placement 
-            }).sort({ dateSubmitted: -1 });
+            const approvedPlacements = await Placement.find({
+                status: 'approved',
+                'placement.unit': placement
+            }).select('username');
             
-            const usernames = latestPlacements.map(p => p.username);
-            query.username = { $in: usernames };
+            const usernames = approvedPlacements.map(p => p.username);
+            query.username = query.username
+                ? { $in: usernames, $regex: username, $options: 'i' }
+                : { $in: usernames };
         }
 
         // Status filter (using last login)
         if (status) {
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            if (status === 'active') {
-                query.lastLogin = { $gte: thirtyDaysAgo };
-            } else {
-                query.lastLogin = { $lt: thirtyDaysAgo };
-            }
+            query.lastLogin = status === 'active'
+                ? { $gte: thirtyDaysAgo }
+                : { $lt: thirtyDaysAgo };
         }
 
-        let members = await User.find(query).populate({
+        const members = await User.find(query).populate({
             path: 'roles',
-            select: 'name id'
+            select: 'name'
         });
 
-        // Format members and handle rank sorting
-        let formattedMembers = formatMembers(members);
+        const formattedMembers = members.map(member => ({
+            username: member.username,
+            highestRole: member.roles?.[0]?.name || 'No role assigned',
+            xp: member.xp || 0,
+            placement: member.placement || 'Not Assigned'
+        }));
 
-        if (rank) {
-            formattedMembers = sortByRank(formattedMembers, rank);
+        // Rank sorting
+        if (rank === 'asc' || rank === 'desc') {
+            formattedMembers.sort((a, b) => {
+                const rankOrder = [
+                    'Citizen', 'Private', 'Private First Class', 'Specialist', 
+                    'Corporal', 'Sergeant', 'Staff Sergeant', 'Sergeant First Class', 
+                    'Master Sergeant', 'First Sergeant', 'Sergeant Major', 
+                    'Command Sergeant Major', 'Sergeant Major of the Army',
+                    'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+                    'Lieutenant Colonel', 'Colonel', 'Brigadier General', 
+                    'Major General', 'Lieutenant General', 'General', 
+                    'General of the Army'
+                ];
+                const aRank = rankOrder.indexOf(a.highestRole);
+                const bRank = rankOrder.indexOf(b.highestRole);
+                return rank === 'asc' ? aRank - bRank : bRank - aRank;
+            });
         }
 
         res.json({ success: true, members: formattedMembers });
     } catch (error) {
+        console.error('Error applying filters:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

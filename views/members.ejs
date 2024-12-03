@@ -360,46 +360,49 @@
 
         // Filter Functions
         async function applyFilters() {
-            const filters = {
-                username: document.getElementById('usernameFilter').value,
-                rank: document.getElementById('rankFilter').value,
-                specificRank: document.getElementById('specificRankFilter').value,
-                placement: document.getElementById('placementFilter').value,
-                status: document.getElementById('statusFilter').value
-            };
+    const filters = {
+        username: document.getElementById('usernameFilter').value,
+        rank: document.getElementById('rankFilter').value,
+        specificRank: document.getElementById('specificRankFilter').value,
+        placement: document.getElementById('placementFilter').value,
+        status: document.getElementById('statusFilter').value
+    };
 
-            try {
-                const params = new URLSearchParams(filters);
-                const response = await fetch(`/members/filter?${params}`);
-                const data = await response.json();
-                if (data.success) {
-                    updateMembersDisplay(data.members);
-                }
-            } catch (error) {
-                console.error('Error applying filters:', error);
-            }
+    console.log('Applying filters:', filters); // Debugging
+
+    try {
+        const params = new URLSearchParams(filters);
+        const response = await fetch(`/members/filter?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            updateMembersDisplay(data.members);
+        } else {
+            console.error('Filter error:', data.error);
         }
+    } catch (error) {
+        console.error('Error fetching filtered members:', error);
+    }
+}
 
-        function updateMembersDisplay(members) {
-            const grid = document.querySelector('.members-grid');
-            grid.innerHTML = members.map(member => `
-                <div class="member-card">
-                    <div class="member-info">
-                        <div class="member-details">
-                            <div><strong>Username:</strong> ${member.username}</div>
-                            <div><strong>Rank:</strong> ${member.highestRole}</div>
-                            <div><strong>Placement:</strong> ${member.placement || 'Not Assigned'}</div>
-                            <div><strong>XP:</strong> ${member.xp}</div>
-                        </div>
-                        ${isOfficer ? `
-                            <div class="member-actions">
-                                <button class="action-btn" onclick="viewNotes('${member.username}')">Notes</button>
-                            </div>
-                        ` : ''}
-                    </div>
+function updateMembersDisplay(members) {
+    const grid = document.querySelector('.members-grid');
+    grid.innerHTML = members.map(member => `
+        <div class="member-card">
+            <div class="member-info">
+                <div class="member-details">
+                    <div><strong>Username:</strong> ${member.username}</div>
+                    <div><strong>Rank:</strong> ${member.highestRole}</div>
+                    <div><strong>Placement:</strong> ${member.placement || 'Not Assigned'}</div>
+                    <div><strong>XP:</strong> ${member.xp}</div>
                 </div>
-            `).join('');
-        }
+                <div class="member-actions">
+                    <button class="action-btn" onclick="viewNotes('${member.username}')">Notes</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
 
         // Utility Functions
         function debounce(func, wait) {
