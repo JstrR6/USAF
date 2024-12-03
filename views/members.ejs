@@ -223,7 +223,7 @@
         <div class="pagination">
             <% for(let i = 1; i <= totalPages; i++) { %>
                 <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
-                        onclick="changePage(<%= i %>)">
+                        onclick="goToPage('<%= i %>')">
                     <%= i %>
                 </button>
             <% } %>
@@ -253,6 +253,58 @@
     <script>
         let currentUsername = '';
 
+        // Page Load Init
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadFilterOptions();
+            setupEventListeners();
+        });
+
+        // Load Filter Options
+        async function loadFilterOptions() {
+            try {
+                const ranks = [
+                    'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
+                    'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
+                    'Master Sergeant', 'First Sergeant', 'Sergeant Major', 
+                    'Command Sergeant Major', 'Sergeant Major of the Army',
+                    'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+                    'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+                    'Lieutenant General', 'General', 'General of the Army'
+                ];
+
+                const rankSelect = document.getElementById('specificRankFilter');
+                ranks.forEach(rank => {
+                    const option = document.createElement('option');
+                    option.value = rank;
+                    option.textContent = rank;
+                    rankSelect.appendChild(option);
+                });
+
+                const response = await fetch('/members/filter-options');
+                const data = await response.json();
+                
+                const placementSelect = document.getElementById('placementFilter');
+                data.units.forEach(unit => {
+                    const option = document.createElement('option');
+                    option.value = unit;
+                    option.textContent = unit;
+                    placementSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading filter options:', error);
+            }
+        }
+
+        // Event Listeners Setup
+        function setupEventListeners() {
+            document.getElementById('usernameFilter').addEventListener('input', debounce(applyFilters, 300));
+            document.getElementById('rankFilter').addEventListener('change', applyFilters);
+            document.getElementById('specificRankFilter').addEventListener('change', applyFilters);
+            document.getElementById('placementFilter').addEventListener('change', applyFilters);
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        }
+
+        // Notes Functions
         async function viewNotes(username) {
             currentUsername = username;
             const modal = document.getElementById('notesModal');
@@ -285,9 +337,7 @@
             try {
                 const response = await fetch('/members/notes/add', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         username: currentUsername,
                         noteType: type,
@@ -308,31 +358,19 @@
             document.getElementById('notesModal').style.display = 'none';
         }
 
-        // Filter functionality
-        const filters = document.querySelectorAll('.filter-input');
-        filters.forEach(filter => {
-            filter.addEventListener('change', applyFilters);
-        });
-
-        document.getElementById('usernameFilter').addEventListener('input', debounce(applyFilters, 300));
-
+        // Filter Functions
         async function applyFilters() {
-            const username = document.getElementById('usernameFilter').value;
-            const rank = document.getElementById('rankFilter').value;
-            const specificRank = document.getElementById('specificRankFilter').value;
-            const placement = document.getElementById('placementFilter').value;
-            const status = document.getElementById('statusFilter').value;
+            const filters = {
+                username: document.getElementById('usernameFilter').value,
+                rank: document.getElementById('rankFilter').value,
+                specificRank: document.getElementById('specificRankFilter').value,
+                placement: document.getElementById('placementFilter').value,
+                status: document.getElementById('statusFilter').value
+            };
 
             try {
-                const queryParams = new URLSearchParams({
-                    username,
-                    rank,
-                    specificRank,
-                    placement,
-                    status
-                }).toString();
-
-                const response = await fetch(`/members/filter?${queryParams}`);
+                const params = new URLSearchParams(filters);
+                const response = await fetch(`/members/filter?${params}`);
                 const data = await response.json();
                 if (data.success) {
                     updateMembersDisplay(data.members);
@@ -350,14 +388,12 @@
                         <div class="member-details">
                             <div><strong>Username:</strong> ${member.username}</div>
                             <div><strong>Rank:</strong> ${member.highestRole}</div>
-                            <div><strong>Placement:</strong> ${member.placement}</div>
+                            <div><strong>Placement:</strong> ${member.placement || 'Not Assigned'}</div>
                             <div><strong>XP:</strong> ${member.xp}</div>
                         </div>
                         ${isOfficer ? `
                             <div class="member-actions">
-                                <button class="action-btn" onclick="viewNotes('${member.username}')">
-                                    Notes
-                                </button>
+                                <button class="action-btn" onclick="viewNotes('${member.username}')">Notes</button>
                             </div>
                         ` : ''}
                     </div>
@@ -365,7 +401,7 @@
             `).join('');
         }
 
-        // Debounce function for search input
+        // Utility Functions
         function debounce(func, wait) {
             let timeout;
             return function executedFunction(...args) {
@@ -378,8 +414,7 @@
             };
         }
 
-        // Pagination functionality
-        function changePage(page) {
+        function goToPage(page) {
             window.location.href = `/members?page=${page}`;
         }
     </script>

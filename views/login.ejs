@@ -95,6 +95,12 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             z-index: -1;
+            animation: float 5s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10px, -10px); }
         }
     </style>
 </head>
@@ -108,16 +114,22 @@
         </form>
     </div>
 
-    <% for (let i = 0; i < 5; i++) { %>
-        <div class="floating-bg" style="
-            left: <%= Math.random() * 100 %>%;
-            top: <%= Math.random() * 100 %>%;
-            animation: float <%= 5 + Math.random() * 10 %>s infinite ease-in-out;
-        "></div>
-    <% } %>
+    <div class="floating-bg"></div>
+    <div class="floating-bg"></div>
+    <div class="floating-bg"></div>
+    <div class="floating-bg"></div>
+    <div class="floating-bg"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Handle floating backgrounds
+            const floatingBgs = document.querySelectorAll('.floating-bg');
+            floatingBgs.forEach(bg => {
+                bg.style.left = `${Math.random() * 100}%`;
+                bg.style.top = `${Math.random() * 100}%`;
+            });
+
+            // Handle input animations
             const inputs = document.querySelectorAll('input');
             inputs.forEach(input => {
                 input.addEventListener('focus', () => {
@@ -128,6 +140,7 @@
                 });
             });
 
+            // Handle button animations
             const button = document.querySelector('button');
             button.addEventListener('mouseenter', () => {
                 button.style.transform = 'translateY(-3px)';

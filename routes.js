@@ -280,79 +280,90 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
 // Add filter route
 router.get('/members/filter', isAuthenticated, async (req, res) => {
     try {
-        const { username, rank, specificRank, placement } = req.query;
+        const { username, rank, specificRank, placement, status } = req.query;
         let query = {};
 
+        // Username filter
         if (username) {
-            query.username = { $regex: username, $options: 'i' };
+            query.username = new RegExp(username, 'i');
         }
+
+        // Specific rank filter
         if (specificRank) {
             query['roles.name'] = specificRank;
         }
+
+        // Placement filter
         if (placement) {
-            query.placement = placement;
+            const latestPlacements = await Placement.find({ 
+                status: 'approved', 
+                'placement.unit': placement 
+            }).sort({ dateSubmitted: -1 });
+            
+            const usernames = latestPlacements.map(p => p.username);
+            query.username = { $in: usernames };
         }
 
-        const members = await User.find(query).populate({
+        // Status filter (using last login)
+        if (status) {
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            if (status === 'active') {
+                query.lastLogin = { $gte: thirtyDaysAgo };
+            } else {
+                query.lastLogin = { $lt: thirtyDaysAgo };
+            }
+        }
+
+        let members = await User.find(query).populate({
             path: 'roles',
             select: 'name id'
         });
 
-        const excludedRoles = [
-            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
-        ];
+        // Format members and handle rank sorting
+        let formattedMembers = formatMembers(members);
 
-        let formattedMembers = members.map(member => {
-            const userRoles = (member.roles || []).filter(role => {
-                return role?.name && !excludedRoles.includes(role.name);
-            });
-
-            return {
-                username: member.username,
-                highestRole: userRoles.length > 0 ? userRoles[0].name : 'No role assigned',
-                xp: member.xp || 0,
-                placement: member.placement || 'Not Assigned'
-            };
-        });
-
-        if (rank === 'asc' || rank === 'desc') {
-            const rankOrder = [
-                'Citizen',
-                'Private',
-                'Private First Class',
-                'Specialist',
-                'Corporal',
-                'Sergeant',
-                'Staff Sergeant',
-                'Sergeant First Class',
-                'Master Sergeant',
-                'First Sergeant',
-                'Sergeant Major',
-                'Command Sergeant Major',
-                'Sergeant Major of the Army',
-                'Second Lieutenant',
-                'First Lieutenant',
-                'Captain',
-                'Major',
-                'Lieutenant Colonel',
-                'Colonel',
-                'Brigadier General',
-                'Major General',
-                'Lieutenant General',
-                'General',
-                'General of the Army'
-            ];
-
-            formattedMembers.sort((a, b) => {
-                const rankA = rankOrder.indexOf(a.highestRole);
-                const rankB = rankOrder.indexOf(b.highestRole);
-                return rank === 'asc' ? rankA - rankB : rankB - rankA;
-            });
+        if (rank) {
+            formattedMembers = sortByRank(formattedMembers, rank);
         }
 
         res.json({ success: true, members: formattedMembers });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Get all unique placements and ranks
+router.get('/members/filter-options', isAuthenticated, async (req, res) => {
+    try {
+        const units = await Unit.find().distinct('name');
+        const ranks = [
+            'Citizen',
+            'Private',
+            'Private First Class',
+            'Specialist',
+            'Corporal',
+            'Sergeant',
+            'Staff Sergeant',
+            'Sergeant First Class',
+            'Master Sergeant',
+            'First Sergeant',
+            'Sergeant Major',
+            'Command Sergeant Major',
+            'Sergeant Major of the Army',
+            'Second Lieutenant',
+            'First Lieutenant',
+            'Captain',
+            'Major',
+            'Lieutenant Colonel',
+            'Colonel',
+            'Brigadier General',
+            'Major General',
+            'Lieutenant General',
+            'General',
+            'General of the Army'
+        ];
+
+        res.json({ success: true, units, ranks });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
