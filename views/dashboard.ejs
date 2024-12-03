@@ -174,10 +174,7 @@
                 <div class="card-header">Experience Points</div>
                 <div class="card-content"><%= user.xp || 0 %> XP</div>
                 <div class="progress-bar">
-                    <div 
-                        class="progress-fill" 
-                        style="width: <%= calculateProgress(user.xp, nextRankXP) %>%;"
-                    ></div>
+                    <div class="progress-fill" data-xp="<%= user.xp || 0 %>" data-next-rank="<%= nextRankXP %>"></div>
                 </div>
                 <div>Next rank at <%= nextRankXP %> XP</div>
             </div>
@@ -202,14 +199,14 @@
     <script>
         // Animate progress bars on page load
         document.addEventListener('DOMContentLoaded', () => {
-            const progressBars = document.querySelectorAll('.progress-fill');
-            progressBars.forEach(bar => {
-                const targetWidth = bar.style.width;
-                bar.style.width = '0';
-                setTimeout(() => {
-                    bar.style.width = targetWidth;
-                }, 100);
-            });
+            const progressFill = document.querySelector('.progress-fill');
+            const xp = parseInt(progressFill.getAttribute('data-xp'), 10);
+            const nextRankXP = parseInt(progressFill.getAttribute('data-next-rank'), 10);
+            
+            // Calculate progress dynamically
+            const progress = Math.min(Math.max((xp / nextRankXP) * 100, 0), 100);
+            progressFill.style.width = `${progress}%`;
+        });
 
             // Add hover effects to nav items
             const navItems = document.querySelectorAll('.nav-item');
