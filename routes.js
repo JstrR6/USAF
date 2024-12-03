@@ -293,19 +293,6 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
             query['roles.name'] = specificRank;
         }
 
-        // Placement filter
-        if (placement) {
-            const approvedPlacements = await Placement.find({
-                status: 'approved',
-                'placement.unit': placement
-            }).select('username');
-            
-            const usernames = approvedPlacements.map(p => p.username);
-            query.username = query.username
-                ? { $in: usernames, $regex: username, $options: 'i' }
-                : { $in: usernames };
-        }
-
         // Status filter (using last login)
         if (status) {
             const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -314,31 +301,46 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
                 : { $lt: thirtyDaysAgo };
         }
 
+        // Fetch members based on the filters
         const members = await User.find(query).populate({
             path: 'roles',
             select: 'name'
         });
 
+        // Fetch latest placements for all members
+        const placements = await Placement.aggregate([
+            { $match: { status: 'approved' } },
+            { $sort: { dateSubmitted: -1 } },
+            { $group: { _id: '$username', latestPlacement: { $first: '$newPlacement' } } }
+        ]);
+
+        const placementMap = placements.reduce((map, placement) => {
+            map[placement._id] = placement.latestPlacement;
+            return map;
+        }, {});
+
+        // Format members with their latest placements
         const formattedMembers = members.map(member => ({
             username: member.username,
             highestRole: member.roles?.[0]?.name || 'No role assigned',
             xp: member.xp || 0,
-            placement: member.placement || 'Not Assigned'
+            placement: placementMap[member.username] || 'Not Assigned'
         }));
 
         // Rank sorting
         if (rank === 'asc' || rank === 'desc') {
+            const rankOrder = [
+                'Citizen', 'Private', 'Private First Class', 'Specialist',
+                'Corporal', 'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
+                'Master Sergeant', 'First Sergeant', 'Sergeant Major',
+                'Command Sergeant Major', 'Sergeant Major of the Army',
+                'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+                'Lieutenant Colonel', 'Colonel', 'Brigadier General',
+                'Major General', 'Lieutenant General', 'General',
+                'General of the Army'
+            ];
+
             formattedMembers.sort((a, b) => {
-                const rankOrder = [
-                    'Citizen', 'Private', 'Private First Class', 'Specialist', 
-                    'Corporal', 'Sergeant', 'Staff Sergeant', 'Sergeant First Class', 
-                    'Master Sergeant', 'First Sergeant', 'Sergeant Major', 
-                    'Command Sergeant Major', 'Sergeant Major of the Army',
-                    'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-                    'Lieutenant Colonel', 'Colonel', 'Brigadier General', 
-                    'Major General', 'Lieutenant General', 'General', 
-                    'General of the Army'
-                ];
                 const aRank = rankOrder.indexOf(a.highestRole);
                 const bRank = rankOrder.indexOf(b.highestRole);
                 return rank === 'asc' ? aRank - bRank : bRank - aRank;
@@ -347,7 +349,7 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
 
         res.json({ success: true, members: formattedMembers });
     } catch (error) {
-        console.error('Error applying filters:', error);
+        console.error('Error fetching members with placements:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
