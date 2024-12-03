@@ -171,14 +171,15 @@
 
         <div class="dashboard-grid">
             <div class="dashboard-card">
-                <div class="card-header">
-                    <span class="card-title">Experience Points</span>
-                </div>
+                <div class="card-header">Experience Points</div>
                 <div class="card-content"><%= user.xp || 0 %> XP</div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: <%= ((user.xp || 0) % 100) %>%;"></div>
+                    <div 
+                        class="progress-fill" 
+                        style="width: <%= calculateProgress(user.xp, nextRankXP) %>%;"
+                    ></div>
                 </div>
-                <div class="card-footer">Next rank at <%= Math.ceil((user.xp || 0)/100) * 100 %> XP</div>
+                <div>Next rank at <%= nextRankXP %> XP</div>
             </div>
 
             <div class="dashboard-card">
@@ -199,8 +200,8 @@
     </div>
 
     <script>
+        // Animate progress bars on page load
         document.addEventListener('DOMContentLoaded', () => {
-            // Animate progress bars
             const progressBars = document.querySelectorAll('.progress-fill');
             progressBars.forEach(bar => {
                 const targetWidth = bar.style.width;

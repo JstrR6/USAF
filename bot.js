@@ -2,6 +2,32 @@ const { Client, GatewayIntentBits, Events } = require('discord.js');
 const mongoose = require('mongoose');
 const User = require('./models/user');
 
+// XP thresholds for ranks
+const XP_THRESHOLDS = [
+    { xp: 0, rank: 'Citizen' },
+    { xp: 1, rank: 'Private' },
+    { xp: 10, rank: 'Private First Class' },
+    { xp: 25, rank: 'Specialist' },
+    { xp: 40, rank: 'Corporal' },
+    { xp: 60, rank: 'Sergeant' },
+    { xp: 80, rank: 'Staff Sergeant' },
+    { xp: 100, rank: 'Sergeant First Class' },
+    { xp: 125, rank: 'Master Sergeant' },
+    { xp: 150, rank: 'First Sergeant' },
+    { xp: 175, rank: 'Sergeant Major' },
+    { xp: 250, rank: 'Command Sergeant Major' }
+];
+
+// Function to determine rank based on XP
+function getRankByXP(xp) {
+    for (let i = XP_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (xp >= XP_THRESHOLDS[i].xp) {
+            return XP_THRESHOLDS[i].rank;
+        }
+    }
+    return 'Citizen';
+}
+
 // Configure bot with necessary intents
 const client = new Client({ 
     intents: [
@@ -31,28 +57,31 @@ client.once(Events.ClientReady, async () => {
 // Main function to sync a single user
 async function syncUserData(member) {
     try {
-        // Map Discord roles to the format our schema expects
         const roles = member.roles.cache.map(role => ({
             id: role.id,
             name: role.name
         }));
 
-        // Update or create user in database
-        const userData = {
-            username: member.user.username,
-            discordId: member.user.id,
-            roles: roles
-        };
-
-        await User.findOneAndUpdate(
+        const user = await User.findOneAndUpdate(
             { discordId: member.user.id },
-            { $set: userData },
+            {
+                $set: {
+                    username: member.user.username,
+                    discordId: member.user.id,
+                    roles
+                }
+            },
             { upsert: true, new: true }
         );
 
-        console.log(`Successfully synced user: ${member.user.username}`);
-    } catch (err) {
-        console.error(`Error syncing user ${member.user.username}:`, err);
+        // Check if user needs promotion based on XP
+        const newRank = getRankByXP(user.xp);
+        const currentRank = user.roles.find(role => role.name === newRank);
+        if (!currentRank) {
+            await updateUserRole(member.user.id, newRank);
+        }
+    } catch (error) {
+        console.error(`Error syncing user ${member.user.username}:`, error);
     }
 }
 
@@ -60,21 +89,21 @@ async function syncUserData(member) {
 async function syncAllUsers() {
     try {
         const guild = client.guilds.cache.first();
-        if (!guild) {
-            console.log('No guild found');
-            return;
-        }
+        if (!guild) throw new Error('Guild not found');
 
         const members = await guild.members.fetch();
-        console.log(`Starting sync for ${members.size} members`);
 
-        for (const [_, member] of members) {
-            await syncUserData(member);
+        const batchSize = 10; // Number of users to process in each batch
+        const memberList = [...members.values()];
+
+        for (let i = 0; i < memberList.length; i += batchSize) {
+            const batch = memberList.slice(i, i + batchSize);
+            await Promise.all(batch.map(member => syncUserData(member)));
         }
 
-        console.log('Full user sync completed');
-    } catch (err) {
-        console.error('Error during full sync:', err);
+        console.log('Full user sync completed.');
+    } catch (error) {
+        console.error('Error during full sync:', error);
     }
 }
 
@@ -203,6 +232,30 @@ async function updateUserRole(discordId, newRank) {
     } catch (error) {
         console.error('Error updating Discord roles:', error);
         return false;
+    }
+}
+
+// Function to update a user's XP and promote them if necessary
+async function updateUserXP(userId, newXP) {
+    try {
+        const user = await User.findById(userId);
+        if (!user) throw new Error('User not found');
+
+        const newRank = getRankByXP(newXP);
+        const currentRank = user.roles.find(role => role.name === newRank);
+
+        if (!currentRank) {
+            console.log(`Promoting ${user.username} to ${newRank}`);
+            await updateUserRole(user.discordId, newRank);
+
+            // Update user roles in database
+            user.roles = [{ name: newRank }];
+        }
+
+        user.xp = newXP;
+        await user.save();
+    } catch (error) {
+        console.error('Error updating user XP:', error);
     }
 }
 

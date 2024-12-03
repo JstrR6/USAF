@@ -126,9 +126,52 @@ router.get('/logout', (req, res, next) => {
     });
 });
 
+
+// XP thresholds for ranks
+const XP_THRESHOLDS = [
+    { xp: 0, rank: 'Citizen' },
+    { xp: 1, rank: 'Private' },
+    { xp: 10, rank: 'Private First Class' },
+    { xp: 25, rank: 'Specialist' },
+    { xp: 40, rank: 'Corporal' },
+    { xp: 60, rank: 'Sergeant' },
+    { xp: 80, rank: 'Staff Sergeant' },
+    { xp: 100, rank: 'Sergeant First Class' },
+    { xp: 125, rank: 'Master Sergeant' },
+    { xp: 150, rank: 'First Sergeant' },
+    { xp: 175, rank: 'Sergeant Major' },
+    { xp: 250, rank: 'Command Sergeant Major' }
+];
+
+// Calculate progress towards next rank
+function calculateProgress(currentXP) {
+    const currentRank = XP_THRESHOLDS.find(threshold => currentXP >= threshold.xp);
+    const nextRank = XP_THRESHOLDS.find(threshold => threshold.xp > currentXP);
+    if (!nextRank) return 100;
+
+    const progress = ((currentXP - currentRank.xp) / (nextRank.xp - currentRank.xp)) * 100;
+    return Math.min(Math.max(progress, 0), 100);
+}
+
 // Main page routes
 router.get('/dashboard', isAuthenticated, (req, res) => {
     res.render('dashboard', { title: 'Dashboard' });
+    try {
+        const user = await User.findById(req.session.userId);
+        if (!user) return res.redirect('/login');
+
+        const nextRank = XP_THRESHOLDS.find(threshold => threshold.xp > user.xp);
+        const nextRankXP = nextRank ? nextRank.xp : user.xp;
+
+        res.render('dashboard', {
+            user,
+            nextRankXP,
+            calculateProgress: calculateProgress(user.xp)
+        });
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        res.redirect('/login');
+    }
 });
 
 router.get('/forms', isAuthenticated, (req, res) => {
