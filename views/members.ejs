@@ -314,7 +314,7 @@
             filter.addEventListener('change', applyFilters);
         });
 
-        document.getElementById('usernameFilter').addEventListener('input', applyFilters);
+        document.getElementById('usernameFilter').addEventListener('input', debounce(applyFilters, 300));
 
         async function applyFilters() {
             const username = document.getElementById('usernameFilter').value;
@@ -324,9 +324,19 @@
             const status = document.getElementById('statusFilter').value;
 
             try {
-                const response = await fetch(`/members/filter?username=${username}&rank=${rank}&specificRank=${specificRank}&placement=${placement}&status=${status}`);
+                const queryParams = new URLSearchParams({
+                    username,
+                    rank,
+                    specificRank,
+                    placement,
+                    status
+                }).toString();
+
+                const response = await fetch(`/members/filter?${queryParams}`);
                 const data = await response.json();
-                updateMembersDisplay(data.members);
+                if (data.success) {
+                    updateMembersDisplay(data.members);
+                }
             } catch (error) {
                 console.error('Error applying filters:', error);
             }
@@ -340,7 +350,7 @@
                         <div class="member-details">
                             <div><strong>Username:</strong> ${member.username}</div>
                             <div><strong>Rank:</strong> ${member.highestRole}</div>
-                            <div><strong>Placement:</strong> ${member.placement || 'Not Assigned'}</div>
+                            <div><strong>Placement:</strong> ${member.placement}</div>
                             <div><strong>XP:</strong> ${member.xp}</div>
                         </div>
                         ${isOfficer ? `
@@ -353,6 +363,19 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Debounce function for search input
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
 
         // Pagination functionality
