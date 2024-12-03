@@ -57,28 +57,42 @@ client.once(Events.ClientReady, async () => {
 // Main function to sync a single user
 async function syncUserData(member) {
     try {
-        // Map Discord roles to the format our schema expects
         const roles = member.roles.cache.map(role => ({
             id: role.id,
             name: role.name
         }));
 
-        // Update or create user in database
-        const userData = {
-            username: member.user.username,
-            discordId: member.user.id,
-            roles: roles
-        };
-
-        await User.findOneAndUpdate(
+        const user = await User.findOneAndUpdate(
             { discordId: member.user.id },
-            { $set: userData },
+            {
+                $set: {
+                    username: member.user.username,
+                    discordId: member.user.id,
+                    roles
+                }
+            },
             { upsert: true, new: true }
         );
 
-        console.log(`Successfully synced user: ${member.user.username}`);
-    } catch (err) {
-        console.error(`Error syncing user ${member.user.username}:`, err);
+        // Check if the user is not an officer before promoting based on XP
+        const officerRanks = [
+            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+            'Lieutenant General', 'General', 'General of the Army'
+        ];
+
+        const isOfficer = user.roles.some(role => officerRanks.includes(role.name));
+
+        if (!isOfficer) {
+            const newRank = getRankByXP(user.xp);
+            const currentRank = user.roles.find(role => role.name === newRank);
+
+            if (!currentRank) {
+                await updateUserRole(member.user.id, newRank);
+            }
+        }
+    } catch (error) {
+        console.error(`Error syncing user ${member.user.username}:`, error);
     }
 }
 
@@ -235,15 +249,26 @@ async function updateUserXP(userId, newXP) {
         const user = await User.findById(userId);
         if (!user) throw new Error('User not found');
 
-        const newRank = getRankByXP(newXP);
-        const currentRank = user.roles.find(role => role.name === newRank);
+        // Check if the user is not an officer before promoting based on XP
+        const officerRanks = [
+            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+            'Lieutenant General', 'General', 'General of the Army'
+        ];
 
-        if (!currentRank) {
-            console.log(`Promoting ${user.username} to ${newRank}`);
-            await updateUserRole(user.discordId, newRank);
+        const isOfficer = user.roles.some(role => officerRanks.includes(role.name));
 
-            // Update user roles in database
-            user.roles = [{ name: newRank }];
+        if (!isOfficer) {
+            const newRank = getRankByXP(newXP);
+            const currentRank = user.roles.find(role => role.name === newRank);
+
+            if (!currentRank) {
+                console.log(`Promoting ${user.username} to ${newRank}`);
+                await updateUserRole(user.discordId, newRank);
+
+                // Update user roles in database
+                user.roles = [{ name: newRank }];
+            }
         }
 
         user.xp = newXP;
