@@ -228,11 +228,20 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        // Fetch total member count
-        const totalMembers = await User.countDocuments();
+        // Ranks to exclude
+        const excludedRanks = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ];
 
-        // Fetch all members with pagination
-        const users = await User.find({})
+        // Fetch total member count excluding specific ranks
+        const totalMembers = await User.countDocuments({
+            'roles.name': { $nin: excludedRanks }
+        });
+
+        // Fetch all members with pagination and exclude specific ranks
+        const users = await User.find({ 'roles.name': { $nin: excludedRanks } })
             .skip(skip)
             .limit(limit)
             .populate({
@@ -287,7 +296,11 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
 router.get('/members/filter', isAuthenticated, async (req, res) => {
     try {
         const { username, rank, specificRank, placement, status } = req.query;
-        let query = {};
+        let query = { 'roles.name': { $nin: [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ] } };
 
         // Username filter
         if (username) {
