@@ -173,7 +173,7 @@
             <div class="dashboard-card">
                 <div class="card-header">Experience Points</div>
                 <div class="card-content"><%= user.xp || 0 %> XP</div>
-                <div class="progress-bar">
+                <div class="progress-bar" aria-label="XP Progress">
                     <div class="progress-fill" data-xp="<%= user.xp || 0 %>" data-next-rank="<%= nextRankXP %>"></div>
                 </div>
                 <div>Next rank at <%= nextRankXP %> XP</div>
@@ -199,10 +199,11 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const progressFill = document.querySelector('.progress-fill');
-            const xp = parseInt(progressFill.getAttribute('data-xp'), 10);
-            const nextRankXP = parseInt(progressFill.getAttribute('data-next-rank'), 10);
-            
-            // Calculate progress dynamically
+            if (!progressFill) return; // Exit if element doesn't exist
+
+            const xp = parseInt(progressFill.getAttribute('data-xp'), 10) || 0;
+            const nextRankXP = parseInt(progressFill.getAttribute('data-next-rank'), 10) || 1;
+
             const progress = Math.min(Math.max((xp / nextRankXP) * 100, 0), 100);
             progressFill.style.width = `${progress}%`;
 
