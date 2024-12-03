@@ -218,7 +218,7 @@ router.get('/profile', isAuthenticated, async (req, res) => {
     }
 });
 
-// Members route
+// Basic - Show all members
 router.get('/members', isAuthenticated, async (req, res, next) => {
     try {
         const members = await User.find({})
@@ -228,13 +228,14 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
                 select: 'name id'
             });
 
+        const excludedRoles = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ];
+
         const formattedMembers = members.map(member => {
             const userRoles = (member.roles || []).filter(role => {
-                const excludedRoles = [
-                    'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-                    'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-                    'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
-                ];
                 return role?.name && !excludedRoles.includes(role.name);
             });
 
@@ -245,14 +246,174 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             };
         });
 
+        // Check if user is an officer
+        const officerRanks = [
+            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+            'Lieutenant General', 'General', 'General of the Army'
+        ];
+
+        const isOfficer = req.user.roles.some(role => 
+            officerRanks.includes(role.name)
+        );
+
         res.render('members', {
             title: 'Members',
-            members: formattedMembers
+            members: formattedMembers,
+            isOfficer
         });
     } catch (err) {
+        console.error('Members error:', err);
         next(err);
     }
 });
+
+// Notes system routes
+router.get('/members/notes/:username', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const notes = await UserNote.find({ username: req.params.username })
+            .sort({ dateAdded: -1 });
+        res.json({ success: true, notes });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/members/notes/add', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const { username, noteType, content } = req.body;
+        
+        const note = new UserNote({
+            username,
+            noteType,
+            content,
+            addedBy: req.user.username
+        });
+        
+        await note.save();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Member search route
+router.get('/members/search', isAuthenticated, async (req, res) => {
+    try {
+        const searchQuery = req.query.username;
+        const members = await User.find({
+            username: { $regex: searchQuery, $options: 'i' }
+        })
+        .select('username roles xp')
+        .populate({
+            path: 'roles',
+            select: 'name id'
+        });
+
+        const excludedRoles = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ];
+
+        const formattedMembers = members.map(member => {
+            const userRoles = (member.roles || []).filter(role => {
+                return role?.name && !excludedRoles.includes(role.name);
+            });
+
+            return {
+                username: member.username,
+                highestRole: userRoles.length > 0 ? userRoles[0].name : 'No role assigned',
+                xp: member.xp || 0
+            };
+        });
+
+        res.json({ success: true, members: formattedMembers });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Member filtering route
+router.post('/members/filter', isAuthenticated, async (req, res) => {
+    try {
+        const { rank, sortOrder } = req.body;
+        let query = {};
+
+        // If specific rank is selected
+        if (rank) {
+            query['roles.name'] = rank;
+        }
+
+        let members = await User.find(query)
+            .select('username roles xp')
+            .populate({
+                path: 'roles',
+                select: 'name id'
+            });
+
+        const excludedRoles = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ];
+
+        let formattedMembers = members.map(member => {
+            const userRoles = (member.roles || []).filter(role => {
+                return role?.name && !excludedRoles.includes(role.name);
+            });
+
+            return {
+                username: member.username,
+                highestRole: userRoles.length > 0 ? userRoles[0].name : 'No role assigned',
+                xp: member.xp || 0
+            };
+        });
+
+        // Sort by rank if requested
+        if (sortOrder) {
+            const rankOrder = [
+                'Citizen',
+                'Private',
+                'Private First Class',
+                'Specialist',
+                'Corporal',
+                'Sergeant',
+                'Staff Sergeant',
+                'Sergeant First Class',
+                'Master Sergeant',
+                'First Sergeant',
+                'Sergeant Major',
+                'Command Sergeant Major',
+                'Sergeant Major of the Army',
+                'Second Lieutenant',
+                'First Lieutenant',
+                'Captain',
+                'Major',
+                'Lieutenant Colonel',
+                'Colonel',
+                'Brigadier General',
+                'Major General',
+                'Lieutenant General',
+                'General',
+                'General of the Army'
+            ];
+
+            formattedMembers.sort((a, b) => {
+                const rankA = rankOrder.indexOf(a.highestRole);
+                const rankB = rankOrder.indexOf(b.highestRole);
+                return sortOrder === 'asc' ? rankA - rankB : rankB - rankA;
+            });
+        }
+
+        res.json({ success: true, members: formattedMembers });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+module.exports = router;
+
 
 // Training routes
 router.get('/forms/training', isAuthenticated, (req, res) => {
