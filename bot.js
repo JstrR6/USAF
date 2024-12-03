@@ -57,76 +57,47 @@ client.once(Events.ClientReady, async () => {
 // Main function to sync a single user
 async function syncUserData(member) {
     try {
+        // Map Discord roles to the format our schema expects
         const roles = member.roles.cache.map(role => ({
             id: role.id,
             name: role.name
         }));
 
-        const user = await User.findOneAndUpdate(
+        // Update or create user in database
+        const userData = {
+            username: member.user.username,
+            discordId: member.user.id,
+            roles: roles
+        };
+
+        await User.findOneAndUpdate(
             { discordId: member.user.id },
-            {
-                $set: {
-                    username: member.user.username,
-                    discordId: member.user.id,
-                    roles
-                }
-            },
+            { $set: userData },
             { upsert: true, new: true }
         );
 
-        // Check if the user is not an officer before promoting based on XP
-        const officerRanks = [
-            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
-            'Lieutenant General', 'General', 'General of the Army'
-        ];
-
-        const isOfficer = user.roles.some(role => officerRanks.includes(role.name));
-
-        if (!isOfficer) {
-            const newRank = getRankByXP(user.xp);
-            const currentRank = user.roles.find(role => role.name === newRank);
-
-            if (!currentRank) {
-                await updateUserRole(member.user.id, newRank);
-            }
-        }
-    } catch (error) {
-        console.error(`Error syncing user ${member.user.username}:`, error);
+        console.log(`Successfully synced user: ${member.user.username}`);
+    } catch (err) {
+        console.error(`Error syncing user ${member.user.username}:`, err);
     }
 }
 
-async function updateUserXP(userId, newXP) {
+// Function to sync all users
+async function syncAllUsers() {
     try {
-        const user = await User.findById(userId);
-        if (!user) throw new Error('User not found');
+        const guild = client.guilds.cache.first();
+        if (!guild) throw new Error('Guild not found');
 
-        // Check if the user is not an officer before promoting based on XP
-        const officerRanks = [
-            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
-            'Lieutenant General', 'General', 'General of the Army'
-        ];
+        const members = await guild.members.fetch();
+        console.log(`Starting sync for ${members.size} members`);
 
-        const isOfficer = user.roles.some(role => officerRanks.includes(role.name));
-
-        if (!isOfficer) {
-            const newRank = getRankByXP(newXP);
-            const currentRank = user.roles.find(role => role.name === newRank);
-
-            if (!currentRank) {
-                console.log(`Promoting ${user.username} to ${newRank}`);
-                await updateUserRole(user.discordId, newRank);
-
-                // Update user roles in database
-                user.roles = [{ name: newRank }];
-            }
+        for (const member of members.values()) {
+            await syncUserData(member);
         }
 
-        user.xp = newXP;
-        await user.save();
+        console.log('Full user sync completed.');
     } catch (error) {
-        console.error('Error updating user XP:', error);
+        console.error('Error during full sync:', error);
     }
 }
 
