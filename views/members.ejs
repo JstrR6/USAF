@@ -354,6 +354,11 @@
                 </div>
             `).join('');
         }
+
+        // Pagination functionality
+        function changePage(page) {
+            window.location.href = `/members?page=${page}`;
+        }
     </script>
 </body>
 </html>

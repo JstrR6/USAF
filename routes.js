@@ -222,12 +222,20 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 // Basic - Show all members
 router.get('/members', isAuthenticated, async (req, res, next) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        const totalMembers = await User.countDocuments();
+
         const members = await User.find({})
             .select('username roles xp')
             .populate({
                 path: 'roles',
                 select: 'name id'
-            });
+            })
+            .skip(skip)
+            .limit(limit);
 
         const excludedRoles = [
             'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
@@ -247,7 +255,6 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             };
         });
 
-        // Check if user is an officer
         const officerRanks = [
             'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
             'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
@@ -261,7 +268,9 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
         res.render('members', {
             title: 'Members',
             members: formattedMembers,
-            isOfficer
+            isOfficer,
+            currentPage: page,
+            totalPages: Math.ceil(totalMembers / limit)
         });
     } catch (err) {
         console.error('Members error:', err);
