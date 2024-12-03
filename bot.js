@@ -74,36 +74,59 @@ async function syncUserData(member) {
             { upsert: true, new: true }
         );
 
-        // Check if user needs promotion based on XP
-        const newRank = getRankByXP(user.xp);
-        const currentRank = user.roles.find(role => role.name === newRank);
-        if (!currentRank) {
-            await updateUserRole(member.user.id, newRank);
+        // Check if the user is not an officer before promoting based on XP
+        const officerRanks = [
+            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+            'Lieutenant General', 'General', 'General of the Army'
+        ];
+
+        const isOfficer = user.roles.some(role => officerRanks.includes(role.name));
+
+        if (!isOfficer) {
+            const newRank = getRankByXP(user.xp);
+            const currentRank = user.roles.find(role => role.name === newRank);
+
+            if (!currentRank) {
+                await updateUserRole(member.user.id, newRank);
+            }
         }
     } catch (error) {
         console.error(`Error syncing user ${member.user.username}:`, error);
     }
 }
 
-// Function to sync all users
-async function syncAllUsers() {
+async function updateUserXP(userId, newXP) {
     try {
-        const guild = client.guilds.cache.first();
-        if (!guild) throw new Error('Guild not found');
+        const user = await User.findById(userId);
+        if (!user) throw new Error('User not found');
 
-        const members = await guild.members.fetch();
+        // Check if the user is not an officer before promoting based on XP
+        const officerRanks = [
+            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+            'Lieutenant General', 'General', 'General of the Army'
+        ];
 
-        const batchSize = 10; // Number of users to process in each batch
-        const memberList = [...members.values()];
+        const isOfficer = user.roles.some(role => officerRanks.includes(role.name));
 
-        for (let i = 0; i < memberList.length; i += batchSize) {
-            const batch = memberList.slice(i, i + batchSize);
-            await Promise.all(batch.map(member => syncUserData(member)));
+        if (!isOfficer) {
+            const newRank = getRankByXP(newXP);
+            const currentRank = user.roles.find(role => role.name === newRank);
+
+            if (!currentRank) {
+                console.log(`Promoting ${user.username} to ${newRank}`);
+                await updateUserRole(user.discordId, newRank);
+
+                // Update user roles in database
+                user.roles = [{ name: newRank }];
+            }
         }
 
-        console.log('Full user sync completed.');
+        user.xp = newXP;
+        await user.save();
     } catch (error) {
-        console.error('Error during full sync:', error);
+        console.error('Error updating user XP:', error);
     }
 }
 
