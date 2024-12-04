@@ -252,40 +252,40 @@
         let selectedXPOption = '';
         
         async function findUser() {
-            const username = document.getElementById('usernameSearch').value;
-            const errorMessage = document.getElementById('errorMessage');
-            const disciplineForm = document.getElementById('disciplineForm');
+        const username = document.getElementById('usernameSearch').value;
+        const errorMessage = document.getElementById('errorMessage');
+        const disciplineForm = document.getElementById('disciplineForm');
+        
+        try {
+            const response = await fetch(`/forms/disciplinary/verify/${username}`);
+            const data = await response.json();
             
-            try {
-                const response = await fetch(`/forms/disciplinary/verify/${username}`);
-                const data = await response.json();
+            if (data.success) {
+                document.querySelector('.search-container').style.display = 'none';
+                disciplineForm.style.display = 'block';
+                document.getElementById('displayUsername').textContent = data.username;
+                document.getElementById('currentRank').textContent = data.currentRank;
+                document.getElementById('currentXP').textContent = data.currentXP;
                 
-                if (data.success) {
-                    document.querySelector('.search-container').style.display = 'none';
-                    disciplineForm.style.display = 'block';
-                    document.getElementById('displayUsername').textContent = data.username;
-                    document.getElementById('currentRank').textContent = data.currentRank;
-                    document.getElementById('currentXP').textContent = data.currentXP;
-                    
-                    // Add special warning for officers
-                    if (data.isOfficer) {
-                        const warningDiv = document.createElement('div');
-                        warningDiv.className = 'warning-text';
-                        warningDiv.textContent = 'WARNING: You are taking disciplinary action against an officer. This action will be logged and reviewed.';
-                        document.querySelector('.user-info').appendChild(warningDiv);
-                    }
-                    
-                    populateRankOptions(data.currentRank);
-                    errorMessage.style.display = 'none';
-                } else {
-                    errorMessage.textContent = data.message;
-                    errorMessage.style.display = 'block';
+                // Add special warning for officers
+                if (data.isOfficer) {
+                    const warningDiv = document.createElement('div');
+                    warningDiv.className = 'warning-text';
+                    warningDiv.textContent = 'WARNING: You are taking disciplinary action against an officer. This action will be logged and reviewed.';
+                    document.querySelector('.user-info').appendChild(warningDiv);
                 }
-            } catch (error) {
-                errorMessage.textContent = 'Error finding user';
+                
+                populateRankOptions(data.currentRank);
+                errorMessage.style.display = 'none';
+            } else {
+                errorMessage.textContent = data.message;
                 errorMessage.style.display = 'block';
             }
+        } catch (error) {
+            errorMessage.textContent = 'Error finding user';
+            errorMessage.style.display = 'block';
         }
+    }
 
         function showArticleContent() {
             const article = document.getElementById('articleSelect').value;
@@ -335,10 +335,14 @@
 
         document.getElementById('disciplineForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('Form submitted'); // Debug log
             
             const article = document.getElementById('articleSelect').value;
             const username = document.getElementById('displayUsername').textContent;
             let details = {};
+
+            console.log('Article:', article); // Debug log
+            console.log('Username:', username); // Debug log
 
             switch(article) {
                 case '1':
@@ -364,6 +368,8 @@
                     break;
             }
 
+            console.log('Details:', details); // Debug log
+
             try {
                 const response = await fetch('/forms/disciplinary/submit', {
                     method: 'POST',
@@ -377,20 +383,34 @@
                     })
                 });
 
+                console.log('Response:', response); // Debug log
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const data = await response.json();
+                console.log('Response data:', data); // Debug log
+
                 if (data.success) {
                     document.getElementById('successMessage').textContent = 'Disciplinary action submitted successfully';
                     document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('errorMessage').style.display = 'none';
+                    
+                    // Wait 2 seconds before redirecting
                     setTimeout(() => {
                         window.location.href = '/forms';
                     }, 2000);
                 } else {
-                    document.getElementById('errorMessage').textContent = data.message;
+                    document.getElementById('errorMessage').textContent = data.message || 'Error submitting disciplinary action';
                     document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('successMessage').style.display = 'none';
                 }
             } catch (error) {
+                console.error('Error:', error); // Debug log
                 document.getElementById('errorMessage').textContent = 'Error submitting disciplinary action';
                 document.getElementById('errorMessage').style.display = 'block';
+                document.getElementById('successMessage').style.display = 'none';
             }
         });
     </script>
