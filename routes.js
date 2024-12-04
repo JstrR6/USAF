@@ -1498,6 +1498,27 @@ router.get('/forms/disciplinary/verify/:username', isAuthenticated, isOfficer, a
             return res.json({ success: false, message: 'User not found' });
         }
 
+        // List of excluded ranks
+        const excludedRoles = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ];
+
+        // Filter roles and get current rank
+        const filteredRoles = user.roles.filter(role => 
+            role?.name && !excludedRoles.includes(role.name)
+        );
+
+        if (filteredRoles.length === 0) {
+            return res.json({ 
+                success: false, 
+                message: 'Invalid rank for disciplinary action' 
+            });
+        }
+
+        const targetRank = filteredRoles[0].name;
+
         // Define officer ranks in order of hierarchy
         const officerRanks = [
             'Second Lieutenant',
@@ -1513,19 +1534,13 @@ router.get('/forms/disciplinary/verify/:username', isAuthenticated, isOfficer, a
             'General of the Army'
         ];
 
-        // Get current user's rank (the officer submitting the form)
         const submitterRank = req.user.roles[0]?.name;
-        // Get target user's rank
-        const targetRank = user.roles[0]?.name;
-
-        // Check if target user is an officer
         const isTargetOfficer = officerRanks.includes(targetRank);
+
         if (isTargetOfficer) {
-            // Check submitter's rank position
             const submitterRankIndex = officerRanks.indexOf(submitterRank);
             const targetRankIndex = officerRanks.indexOf(targetRank);
 
-            // If submitter's rank isn't higher than target's rank
             if (submitterRankIndex <= targetRankIndex) {
                 return res.json({ 
                     success: false, 
@@ -1534,7 +1549,6 @@ router.get('/forms/disciplinary/verify/:username', isAuthenticated, isOfficer, a
             }
         }
 
-        // If we get here, either the target isn't an officer, or the submitter outranks them
         return res.json({
             success: true,
             username: user.username,
@@ -1550,16 +1564,27 @@ router.get('/forms/disciplinary/verify/:username', isAuthenticated, isOfficer, a
 
 router.post('/forms/disciplinary/submit', isAuthenticated, isOfficer, async (req, res) => {
     try {
-        const { username, article, details } = req.body;
-        const user = await User.findOne({ username });
+        console.log('Received disciplinary submission:', req.body); // Debug log
 
+        const { username, article, details } = req.body;
+        
+        if (!username || !article || !details) {
+            console.log('Missing required fields:', { username, article, details }); // Debug log
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Missing required fields' 
+            });
+        }
+
+        const user = await User.findOne({ username });
         if (!user) {
             return res.json({ success: false, message: 'User not found' });
         }
 
+        let result = null;
         switch(article) {
             case '1': // Warning
-                await new UserNote({
+                result = await new UserNote({
                     username,
                     noteType: 'Warning',
                     content: `[Article 1] ${details.reason}`,
@@ -1579,7 +1604,7 @@ router.post('/forms/disciplinary/submit', isAuthenticated, isOfficer, async (req
                 user.xp = Math.max(0, user.xp - xpReduction);
                 await user.save();
 
-                await new UserNote({
+                result = await new UserNote({
                     username,
                     noteType: 'Warning',
                     content: `[Article 2] XP Reduction: ${xpReduction}XP - ${details.reason}`,
@@ -1592,7 +1617,10 @@ router.post('/forms/disciplinary/submit', isAuthenticated, isOfficer, async (req
                 const newRank = details.newRank;
                 
                 // Update Discord role
-                await bot.updateUserRole(user.discordId, newRank);
+                const roleUpdated = await bot.updateUserRole(user.discordId, newRank);
+                if (!roleUpdated) {
+                    throw new Error('Failed to update Discord role');
+                }
                 
                 // Set XP to minimum for new rank
                 const ranks = [
@@ -1614,7 +1642,7 @@ router.post('/forms/disciplinary/submit', isAuthenticated, isOfficer, async (req
                 user.xp = rankData ? rankData.xp : 0;
                 await user.save();
 
-                await new UserNote({
+                result = await new UserNote({
                     username,
                     noteType: 'Warning',
                     content: `[Article 3] Demotion from ${currentRank} to ${newRank} - ${details.reason}`,
@@ -1623,26 +1651,37 @@ router.post('/forms/disciplinary/submit', isAuthenticated, isOfficer, async (req
                 break;
 
             case '4': // Discharge
-                // Update to Citizen rank
-                await bot.updateUserRole(user.discordId, 'Citizen');
+                const citizenRole = await bot.updateUserRole(user.discordId, 'Citizen');
+                if (!citizenRole) {
+                    throw new Error('Failed to update Discord role to Citizen');
+                }
                 
-                // Reset XP
                 user.xp = 0;
                 await user.save();
 
-                await new UserNote({
+                result = await new UserNote({
                     username,
                     noteType: 'Warning',
                     content: `[Article 4] Discharged: ${details.reason}`,
                     addedBy: req.user.username
                 }).save();
                 break;
+
+            default:
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Invalid article type' 
+                });
         }
 
-        res.json({ success: true });
+        console.log('Disciplinary action completed:', result); // Debug log
+        res.json({ success: true, message: 'Disciplinary action completed successfully' });
     } catch (error) {
         console.error('Disciplinary action error:', error);
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Error processing disciplinary action'
+        });
     }
 });
 
