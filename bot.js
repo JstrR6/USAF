@@ -1,3 +1,5 @@
+// Bot.js
+
 const { Client, GatewayIntentBits, Events } = require('discord.js');
 const mongoose = require('mongoose');
 const User = require('./models/user');

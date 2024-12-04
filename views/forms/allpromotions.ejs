@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USM All Promotions</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .promotions-container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .filters-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .filter-input {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: black;
+        }
+
+        .filter-input option {
+            background: #541170;
+            color: black;
+        }
+
+        .promotion-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            color: black;
+            margin-bottom: 1rem;
+        }
+
+        .promotion-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+        }
+
+        .status-approved {
+            background: #48bb78;
+            color: white;
+        }
+
+        .status-pending {
+            background: #ed8936;
+            color: white;
+        }
+
+        .status-rejected {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .reason-text {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 0.5rem 0;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+        }
+
+        .page-btn.active {
+            background: #4299e1;
+        }
+
+        .header {
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0.5rem 0;
+        }
+
+        .export-btn {
+            background: #48bb78;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .export-btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="promotions-container">
+        <h2 class="header">All Promotion Records</h2>
+
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div>Total Promotions</div>
+                <div class="stat-number"><%= totalPromotions %></div>
+            </div>
+            <div class="stat-card">
+                <div>Approved</div>
+                <div class="stat-number"><%= totalApproved %></div>
+            </div>
+            <div class="stat-card">
+                <div>Pending</div>
+                <div class="stat-number"><%= pendingCount %></div>
+            </div>
+        </div>
+
+        <a href="/forms/allpromotions/export" class="export-btn">Export to CSV</a>
+
+        <div class="filters-container">
+            <input type="text" id="searchInput" placeholder="Search username/submitted by..." class="filter-input">
+            <select id="statusFilter" class="filter-input">
+                <option value="all">All Status</option>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+            </select>
+            <select id="sortFilter" class="filter-input">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+            </select>
+            <input type="date" id="dateFilter" class="filter-input">
+        </div>
+
+        <div class="promotion-cards">
+            <% if (promotions && promotions.length > 0) { %>
+                <% promotions.forEach(promotion => { %>
+                    <div class="promotion-card">
+                        <div class="promotion-row">
+                            <strong>Username:</strong>
+                            <span><%= promotion.username %></span>
+                        </div>
+                        <div class="promotion-row">
+                            <strong>Current Rank:</strong>
+                            <span><%= promotion.currentRank %></span>
+                        </div>
+                        <div class="promotion-row">
+                            <strong>Promotion Rank:</strong>
+                            <span><%= promotion.promotionRank %></span>
+                        </div>
+                        <div class="promotion-row">
+                            <strong>Submitted By:</strong>
+                            <span><%= promotion.submittedBy %></span>
+                        </div>
+                        <div class="promotion-row">
+                            <strong>Date:</strong>
+                            <span><%= new Date(promotion.dateSubmitted).toLocaleDateString() %></span>
+                        </div>
+                        <div class="promotion-row">
+                            <strong>Status:</strong>
+                            <span class="status-badge status-<%= promotion.status %>">
+                                <%= promotion.status.charAt(0).toUpperCase() + promotion.status.slice(1) %>
+                            </span>
+                        </div>
+                        <% if (promotion.approvedBy) { %>
+                            <div class="promotion-row">
+                                <strong>Handled By:</strong>
+                                <span><%= promotion.approvedBy %> on <%= new Date(promotion.dateApproved).toLocaleDateString() %></span>
+                            </div>
+                        <% } %>
+                        <div class="reason-text">
+                            <strong>Reason:</strong><br>
+                            <%= promotion.reason %>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="no-promotions">
+                    <h3>No promotion records found</h3>
+                </div>
+            <% } %>
+        </div>
+
+        <% if (totalPages > 1) { %>
+            <div class="pagination">
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
+                            onclick="window.location.href='/forms/allpromotions?page=<%= i %>'">
+                        <%= i %>
+                    </button>
+                <% } %>
+            </div>
+        <% } %>
+    </div>
+
+    <script>
+        // Add event listeners
+        document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('sortFilter').addEventListener('change', applyFilters);
+        document.getElementById('dateFilter').addEventListener('change', applyFilters);
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        async function applyFilters() {
+            const search = document.getElementById('searchInput').value;
+            const status = document.getElementById('statusFilter').value;
+            const sort = document.getElementById('sortFilter').value;
+            const date = document.getElementById('dateFilter').value;
+
+            try {
+                const response = await fetch('/forms/allpromotions/filter', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ search, status, sort, date })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    updatePromotionsDisplay(data.promotions);
+                }
+            } catch (error) {
+                console.error('Error applying filters:', error);
+            }
+        }
+
+        function updatePromotionsDisplay(promotions) {
+            const container = document.querySelector('.promotion-cards');
+            if (promotions.length === 0) {
+                container.innerHTML = `
+                    <div class="no-promotions">
+                        <h3>No promotion records found</h3>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = promotions.map(promotion => `
+                <div class="promotion-card">
+                    <div class="promotion-row">
+                        <strong>Username:</strong>
+                        <span>${promotion.username}</span>
+                    </div>
+                    <div class="promotion-row">
+                        <strong>Current Rank:</strong>
+                        <span>${promotion.currentRank}</span>
+                    </div>
+                    <div class="promotion-row">
+                        <strong>Promotion Rank:</strong>
+                        <span>${promotion.promotionRank}</span>
+                    </div>
+                    <div class="promotion-row">
+                        <strong>Submitted By:</strong>
+                        <span>${promotion.submittedBy}</span>
+                    </div>
+                    <div class="promotion-row">
+                        <strong>Date:</strong>
+                        <span>${new Date(promotion.dateSubmitted).toLocaleDateString()}</span>
+                    </div>
+                    <div class="promotion-row">
+                        <strong>Status:</strong>
+                        <span class="status-badge status-${promotion.status}">
+                            ${promotion.status.charAt(0).toUpperCase() + promotion.status.slice(1)}
+                        </span>
+                    </div>
+                    ${promotion.approvedBy ? `
+                        <div class="promotion-row">
+                            <strong>Handled By:</strong>
+                            <span>${promotion.approvedBy} on ${new Date(promotion.dateApproved).toLocaleDateString()}</span>
+                        </div>
+                    ` : ''}
+                    <div class="reason-text">
+                        <strong>Reason:</strong><br>
+                        ${promotion.reason}
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

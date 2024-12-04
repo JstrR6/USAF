@@ -1,3 +1,5 @@
+// Routes.js
+
 const express = require('express');
 const passport = require('passport');
 const bcrypt = require('bcrypt');
@@ -844,8 +846,10 @@ router.post('/forms/promotions/handle', isAuthenticated, isOfficer, async (req, 
                 return res.json({ success: false, message: 'Failed to update Discord role' });
             }
 
-            // Update promotion status
+            // Update promotion status and add approver info
             promotion.status = 'approved';
+            promotion.approvedBy = req.user.username;
+            promotion.dateApproved = new Date();
             await promotion.save();
 
             // Update user's rank in database
@@ -856,6 +860,8 @@ router.post('/forms/promotions/handle', isAuthenticated, isOfficer, async (req, 
 
         } else if (action === 'reject') {
             promotion.status = 'rejected';
+            promotion.approvedBy = req.user.username;
+            promotion.dateApproved = new Date();
             await promotion.save();
         }
 
@@ -1118,6 +1124,102 @@ router.post('/forms/commission/process', isAuthenticated, isOfficer, async (req,
             success: false,
             message: 'Error processing commission'
         });
+    }
+});
+
+router.get('/forms/allpromotions', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        
+        const [promotions, total] = await Promise.all([
+            Promotion.find({})
+                .sort({ dateSubmitted: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit),
+            Promotion.countDocuments(),
+        ]);
+
+        const [totalApproved, pendingCount] = await Promise.all([
+            Promotion.countDocuments({ status: 'approved' }),
+            Promotion.countDocuments({ status: 'pending' })
+        ]);
+
+        res.render('forms/allpromotions', {
+            title: 'All Promotions',
+            promotions,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalPromotions: total,
+            totalApproved,
+            pendingCount
+        });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Add filter route
+router.post('/forms/allpromotions/filter', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const { search, status, sort, date } = req.body;
+        let query = {};
+
+        if (search) {
+            query.$or = [
+                { username: new RegExp(search, 'i') },
+                { submittedBy: new RegExp(search, 'i') }
+            ];
+        }
+
+        if (status !== 'all') {
+            query.status = status;
+        }
+
+        if (date) {
+            const filterDate = new Date(date);
+            query.dateSubmitted = {
+                $gte: filterDate,
+                $lt: new Date(filterDate.getTime() + 24 * 60 * 60 * 1000)
+            };
+        }
+
+        let sortOption = {};
+        switch (sort) {
+            case 'oldest':
+                sortOption = { dateSubmitted: 1 };
+                break;
+            case 'newest':
+                sortOption = { dateSubmitted: -1 };
+                break;
+            default:
+                sortOption = { dateSubmitted: -1 };
+        }
+
+        const promotions = await Promotion.find(query).sort(sortOption);
+        res.json({ success: true, promotions });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error filtering promotions' });
+    }
+});
+
+// Add export route
+router.get('/forms/allpromotions/export', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const promotions = await Promotion.find({});
+        const csv = [
+            'Username,Current Rank,Promotion Rank,Status,Submitted By,Date Submitted,Approved By,Date Approved',
+            ...promotions.map(p => {
+                return `${p.username},${p.currentRank},${p.promotionRank},${p.status},${p.submittedBy},${p.dateSubmitted},${p.approvedBy || ''},${p.dateApproved || ''}`;
+            })
+        ].join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=promotions.csv');
+        res.send(csv);
+    } catch (error) {
+        console.error('Export error:', error);
+        res.status(500).send('Error exporting promotions');
     }
 });
 

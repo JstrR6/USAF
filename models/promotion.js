@@ -29,6 +29,14 @@ const promotionSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
+    },
+    approvedBy: {
+        type: String,
+        default: null
+    },
+    dateApproved: {
+        type: Date,
+        default: null
     }
 });
 
