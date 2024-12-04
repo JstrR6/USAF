@@ -1223,6 +1223,198 @@ router.get('/forms/allpromotions/export', isAuthenticated, isOfficer, async (req
     }
 });
 
+router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        // Get data from all schemas
+        const [trainings, promotions, awards, placements] = await Promise.all([
+            Training.find().sort({ dateSubmitted: -1 }),
+            Promotion.find().sort({ dateSubmitted: -1 }),
+            Award.find().sort({ dateSubmitted: -1 }),
+            Placement.find().sort({ dateSubmitted: -1 })
+        ]);
+
+        // Combine and format all activities
+        const allActivities = [
+            ...trainings.map(t => ({
+                type: 'Training',
+                username: t.trainees.join(', '),
+                performedBy: t.trainer,
+                details: `XP Amount: ${t.xpAmount}`,
+                status: t.awarded ? 'Approved' : (t.needsApproval ? 'Pending' : 'Processing'),
+                date: t.dateSubmitted
+            })),
+            ...promotions.map(p => ({
+                type: 'Promotion',
+                username: p.username,
+                performedBy: p.submittedBy,
+                details: `${p.currentRank} → ${p.promotionRank}`,
+                status: p.status,
+                date: p.dateSubmitted,
+                approvedBy: p.approvedBy,
+                dateApproved: p.dateApproved
+            })),
+            ...awards.map(a => ({
+                type: 'Award',
+                username: a.username,
+                performedBy: a.submittedBy,
+                details: a.award,
+                status: a.status,
+                date: a.dateSubmitted
+            })),
+            ...placements.map(p => ({
+                type: 'Placement',
+                username: p.username,
+                performedBy: p.submittedBy,
+                details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
+                status: p.status,
+                date: p.dateSubmitted
+            }))
+        ].sort((a, b) => b.date - a.date);
+
+        // Calculate statistics
+        const stats = {
+            total: allActivities.length,
+            byType: {
+                Training: trainings.length,
+                Promotion: promotions.length,
+                Award: awards.length,
+                Placement: placements.length
+            },
+            byStatus: {
+                Pending: allActivities.filter(a => a.status === 'pending').length,
+                Approved: allActivities.filter(a => a.status === 'approved').length,
+                Rejected: allActivities.filter(a => a.status === 'rejected').length
+            },
+            // Daily activity for the last 7 days
+            dailyActivity: [...Array(7)].map((_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                date.setHours(0, 0, 0, 0);
+                const nextDay = new Date(date);
+                nextDay.setDate(nextDay.getDate() + 1);
+                
+                return {
+                    date: date.toISOString().split('T')[0],
+                    count: allActivities.filter(a => 
+                        a.date >= date && a.date < nextDay
+                    ).length
+                };
+            }).reverse(),
+            // Top users
+            topUsers: Object.entries(
+                allActivities.reduce((acc, curr) => {
+                    acc[curr.username] = (acc[curr.username] || 0) + 1;
+                    return acc;
+                }, {})
+            ).sort((a, b) => b[1] - a[1]).slice(0, 5)
+        };
+
+        // Paginate activities
+        const paginatedActivities = allActivities.slice(skip, skip + limit);
+        const totalPages = Math.ceil(allActivities.length / limit);
+
+        res.render('forms/auditlog', {
+            title: 'Audit Log',
+            activities: paginatedActivities,
+            stats,
+            currentPage: page,
+            totalPages,
+            totalActivities: allActivities.length
+        });
+
+    } catch (error) {
+        console.error('Audit log error:', error);
+        next(error);
+    }
+});
+
+// Filter route
+router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const { search, type, status, startDate, endDate } = req.body;
+        
+        // Get fresh data
+        const [trainings, promotions, awards, placements] = await Promise.all([
+            Training.find(),
+            Promotion.find(),
+            Award.find(),
+            Placement.find()
+        ]);
+
+        // Combine all activities (same as above)
+        let allActivities = [
+            ...trainings.map(t => ({
+                type: 'Training',
+                username: t.trainees.join(', '),
+                performedBy: t.trainer,
+                details: `XP Amount: ${t.xpAmount}`,
+                status: t.awarded ? 'Approved' : (t.needsApproval ? 'Pending' : 'Processing'),
+                date: t.dateSubmitted
+            })),
+            ...promotions.map(p => ({
+                type: 'Promotion',
+                username: p.username,
+                performedBy: p.submittedBy,
+                details: `${p.currentRank} → ${p.promotionRank}`,
+                status: p.status,
+                date: p.dateSubmitted,
+                approvedBy: p.approvedBy,
+                dateApproved: p.dateApproved
+            })),
+            ...awards.map(a => ({
+                type: 'Award',
+                username: a.username,
+                performedBy: a.submittedBy,
+                details: a.award,
+                status: a.status,
+                date: a.dateSubmitted
+            })),
+            ...placements.map(p => ({
+                type: 'Placement',
+                username: p.username,
+                performedBy: p.submittedBy,
+                details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
+                status: p.status,
+                date: p.dateSubmitted
+            }))
+        ].sort((a, b) => b.date - a.date);
+
+        // Apply filters
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+            allActivities = allActivities.filter(a => 
+                searchRegex.test(a.username) || 
+                searchRegex.test(a.performedBy) ||
+                searchRegex.test(a.details)
+            );
+        }
+
+        if (type !== 'all') {
+            allActivities = allActivities.filter(a => a.type === type);
+        }
+
+        if (status !== 'all') {
+            allActivities = allActivities.filter(a => a.status === status);
+        }
+
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            allActivities = allActivities.filter(a => 
+                a.date >= start && a.date <= end
+            );
+        }
+
+        res.json({ success: true, activities: allActivities });
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Error filtering logs' });
+    }
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);
