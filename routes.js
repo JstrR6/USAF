@@ -1415,6 +1415,25 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
     }
 });
 
+// Export route for audit log
+router.get('/forms/auditlog/export', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const logs = await AuditLog.find({});
+        const csv = [
+            'Action Type,Username,Performed By,Status,Timestamp',
+            ...logs.map(log => {
+                return `${log.actionType},${log.username},${log.performedBy},${log.status},${log.timestamp}`;
+            })
+        ].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=auditlog.csv');
+        res.send(csv);
+    } catch (error) {
+        res.status(500).send('Error exporting audit log');
+    }
+});
+
 // Error handling middleware
 router.use((err, req, res, next) => {
     console.error('Error:', err.stack);
