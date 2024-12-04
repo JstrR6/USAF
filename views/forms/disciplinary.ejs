@@ -288,26 +288,37 @@
         function showArticleContent() {
             document.querySelectorAll('.article-content').forEach(content => {
                 content.style.display = 'none';
+                // Disable required fields in hidden sections
+                content.querySelectorAll('[required]').forEach(field => {
+                    field.required = false;
+                });
             });
-            
+
             const article = document.getElementById('articleSelect').value;
             if (article) {
-                document.getElementById(`article${article}Content`).style.display = 'block';
+                const articleContent = document.getElementById(`article${article}Content`);
+                articleContent.style.display = 'block';
+                // Enable required fields for the selected article
+                articleContent.querySelectorAll('[required]').forEach(field => {
+                    field.required = true;
+                });
             }
         }
 
         function selectXPOption(option) {
             selectedXPOption = option;
-            document.querySelectorAll('.xp-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            
             const manualInput = document.getElementById('manualXPInput');
+            const manualAmount = document.getElementById('manualXPAmount');
+
+            document.querySelectorAll('.xp-option').forEach(opt => opt.classList.remove('selected'));
+
             if (option === 'manual') {
                 manualInput.style.display = 'block';
+                manualAmount.required = true; // Enable validation for manual input
                 document.querySelector('.xp-option:last-child').classList.add('selected');
             } else {
                 manualInput.style.display = 'none';
+                manualAmount.required = false; // Disable validation for manual input
                 document.querySelector(`.xp-option:nth-child(${['5','25','50','100'].indexOf(option) + 1})`).classList.add('selected');
             }
         }
@@ -333,18 +344,43 @@
 
         document.getElementById('disciplineForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+
             const submitButton = e.target.querySelector('button[type="submit"]');
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
 
             submitButton.disabled = true;
-            
+
             try {
                 const article = document.getElementById('articleSelect').value;
                 const username = document.getElementById('displayUsername').textContent;
+
+                // Ensure an article is selected
+                if (!article) {
+                    errorMessage.textContent = 'Please select an article.';
+                    errorMessage.style.display = 'block';
+                    submitButton.disabled = false;
+                    return;
+                }
+
                 let details = {};
 
-                switch(article) {
+                // Validate visible fields dynamically
+                const visibleFields = [
+                    ...document.querySelectorAll(`#article${article}Content [required]:not([style*="display: none"])`)
+                ];
+
+                for (let field of visibleFields) {
+                    if (!field.checkValidity()) {
+                        errorMessage.textContent = 'Please fill out all required fields.';
+                        errorMessage.style.display = 'block';
+                        submitButton.disabled = false;
+                        return;
+                    }
+                }
+
+                // Prepare details based on the selected article
+                switch (article) {
                     case '1':
                         details.reason = document.getElementById('warningReason').value;
                         break;
@@ -368,6 +404,7 @@
                         break;
                 }
 
+                // Submit data to the server
                 const response = await fetch('/forms/disciplinary/submit', {
                     method: 'POST',
                     headers: {
@@ -383,15 +420,15 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    successMessage.textContent = 'Disciplinary action submitted successfully';
+                    successMessage.textContent = 'Disciplinary action submitted successfully.';
                     successMessage.style.display = 'block';
                     errorMessage.style.display = 'none';
-                    
+
                     setTimeout(() => {
                         window.location.href = '/forms';
                     }, 2000);
                 } else {
-                    throw new Error(data.message || 'Error submitting disciplinary action');
+                    throw new Error(data.message || 'Error submitting disciplinary action.');
                 }
             } catch (error) {
                 errorMessage.textContent = error.message;
