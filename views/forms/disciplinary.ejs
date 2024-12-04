@@ -127,10 +127,6 @@
             color: black;
         }
 
-        .article-options {
-            margin-bottom: 1rem;
-        }
-
         .article-content {
             display: none;
             margin-top: 1rem;
@@ -152,6 +148,8 @@
             border-radius: 5px;
             cursor: pointer;
             text-align: center;
+            transition: all 0.3s ease;
+            color: black;
         }
 
         .xp-option:hover {
@@ -169,6 +167,11 @@
             padding: 1rem;
             background: rgba(229, 62, 62, 0.1);
             border-radius: 5px;
+        }
+
+        select {
+            background: rgba(255, 255, 255, 0.1);
+            color: black;
         }
 
         select option {
@@ -207,12 +210,10 @@
                 <option value="4">Article 4: Discharge</option>
             </select>
 
-            <!-- Article 1: Warning -->
             <div id="article1Content" class="article-content">
                 <textarea id="warningReason" placeholder="Enter warning reason" required></textarea>
             </div>
 
-            <!-- Article 2: XP Reduction -->
             <div id="article2Content" class="article-content">
                 <div class="xp-options">
                     <div class="xp-option" onclick="selectXPOption('5')">5% Reduction</div>
@@ -227,7 +228,6 @@
                 <textarea id="xpReason" placeholder="Enter XP reduction reason" required></textarea>
             </div>
 
-            <!-- Article 3: Demotion -->
             <div id="article3Content" class="article-content">
                 <select id="demotionRank" required>
                     <option value="">Select New Rank</option>
@@ -235,7 +235,6 @@
                 <textarea id="demotionReason" placeholder="Enter demotion reason" required></textarea>
             </div>
 
-            <!-- Article 4: Discharge -->
             <div id="article4Content" class="article-content">
                 <div class="warning-text">
                     Warning: This action will set the user's rank to Citizen and remove all XP.
@@ -250,59 +249,60 @@
 
     <script>
         let selectedXPOption = '';
-        
+
         async function findUser() {
-        const username = document.getElementById('usernameSearch').value;
-        const errorMessage = document.getElementById('errorMessage');
-        const disciplineForm = document.getElementById('disciplineForm');
-        
-        try {
-            const response = await fetch(`/forms/disciplinary/verify/${username}`);
-            const data = await response.json();
+            const username = document.getElementById('usernameSearch').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const disciplineForm = document.getElementById('disciplineForm');
             
-            if (data.success) {
-                document.querySelector('.search-container').style.display = 'none';
-                disciplineForm.style.display = 'block';
-                document.getElementById('displayUsername').textContent = data.username;
-                document.getElementById('currentRank').textContent = data.currentRank;
-                document.getElementById('currentXP').textContent = data.currentXP;
+            try {
+                const response = await fetch(`/forms/disciplinary/verify/${username}`);
+                const data = await response.json();
                 
-                // Add special warning for officers
-                if (data.isOfficer) {
-                    const warningDiv = document.createElement('div');
-                    warningDiv.className = 'warning-text';
-                    warningDiv.textContent = 'WARNING: You are taking disciplinary action against an officer. This action will be logged and reviewed.';
-                    document.querySelector('.user-info').appendChild(warningDiv);
+                if (data.success) {
+                    document.querySelector('.search-container').style.display = 'none';
+                    disciplineForm.style.display = 'block';
+                    document.getElementById('displayUsername').textContent = data.username;
+                    document.getElementById('currentRank').textContent = data.currentRank;
+                    document.getElementById('currentXP').textContent = data.currentXP;
+                    
+                    if (data.isOfficer) {
+                        const warningDiv = document.createElement('div');
+                        warningDiv.className = 'warning-text';
+                        warningDiv.textContent = 'WARNING: You are taking disciplinary action against an officer. This action will be logged and reviewed.';
+                        document.querySelector('.user-info').appendChild(warningDiv);
+                    }
+                    
+                    populateRankOptions(data.currentRank);
+                    errorMessage.style.display = 'none';
+                } else {
+                    errorMessage.textContent = data.message;
+                    errorMessage.style.display = 'block';
                 }
-                
-                populateRankOptions(data.currentRank);
-                errorMessage.style.display = 'none';
-            } else {
-                errorMessage.textContent = data.message;
+            } catch (error) {
+                errorMessage.textContent = 'Error finding user';
                 errorMessage.style.display = 'block';
             }
-        } catch (error) {
-            errorMessage.textContent = 'Error finding user';
-            errorMessage.style.display = 'block';
         }
-    }
 
         function showArticleContent() {
-            const article = document.getElementById('articleSelect').value;
             document.querySelectorAll('.article-content').forEach(content => {
                 content.style.display = 'none';
             });
+            
+            const article = document.getElementById('articleSelect').value;
             if (article) {
                 document.getElementById(`article${article}Content`).style.display = 'block';
             }
         }
 
         function selectXPOption(option) {
+            selectedXPOption = option;
             document.querySelectorAll('.xp-option').forEach(opt => {
                 opt.classList.remove('selected');
             });
-            const manualInput = document.getElementById('manualXPInput');
             
+            const manualInput = document.getElementById('manualXPInput');
             if (option === 'manual') {
                 manualInput.style.display = 'block';
                 document.querySelector('.xp-option:last-child').classList.add('selected');
@@ -310,7 +310,6 @@
                 manualInput.style.display = 'none';
                 document.querySelector(`.xp-option:nth-child(${['5','25','50','100'].indexOf(option) + 1})`).classList.add('selected');
             }
-            selectedXPOption = option;
         }
 
         function populateRankOptions(currentRank) {
@@ -324,7 +323,6 @@
             const select = document.getElementById('demotionRank');
             select.innerHTML = '<option value="">Select New Rank</option>';
             
-            // Only show ranks below current rank
             for (let i = 0; i <= currentRankIndex; i++) {
                 const option = document.createElement('option');
                 option.value = ranks[i];
@@ -335,42 +333,41 @@
 
         document.getElementById('disciplineForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log('Form submitted'); // Debug log
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            submitButton.disabled = true;
             
-            const article = document.getElementById('articleSelect').value;
-            const username = document.getElementById('displayUsername').textContent;
-            let details = {};
-
-            console.log('Article:', article); // Debug log
-            console.log('Username:', username); // Debug log
-
-            switch(article) {
-                case '1':
-                    details.reason = document.getElementById('warningReason').value;
-                    break;
-                case '2':
-                    if (selectedXPOption === 'manual') {
-                        details.type = 'manual';
-                        details.amount = document.getElementById('manualXPAmount').value;
-                    } else {
-                        details.type = 'percentage';
-                        details.percentage = selectedXPOption;
-                    }
-                    details.reason = document.getElementById('xpReason').value;
-                    break;
-                case '3':
-                    details.currentRank = document.getElementById('currentRank').textContent;
-                    details.newRank = document.getElementById('demotionRank').value;
-                    details.reason = document.getElementById('demotionReason').value;
-                    break;
-                case '4':
-                    details.reason = document.getElementById('dischargeReason').value;
-                    break;
-            }
-
-            console.log('Details:', details); // Debug log
-
             try {
+                const article = document.getElementById('articleSelect').value;
+                const username = document.getElementById('displayUsername').textContent;
+                let details = {};
+
+                switch(article) {
+                    case '1':
+                        details.reason = document.getElementById('warningReason').value;
+                        break;
+                    case '2':
+                        if (selectedXPOption === 'manual') {
+                            details.type = 'manual';
+                            details.amount = document.getElementById('manualXPAmount').value;
+                        } else {
+                            details.type = 'percentage';
+                            details.percentage = selectedXPOption;
+                        }
+                        details.reason = document.getElementById('xpReason').value;
+                        break;
+                    case '3':
+                        details.currentRank = document.getElementById('currentRank').textContent;
+                        details.newRank = document.getElementById('demotionRank').value;
+                        details.reason = document.getElementById('demotionReason').value;
+                        break;
+                    case '4':
+                        details.reason = document.getElementById('dischargeReason').value;
+                        break;
+                }
+
                 const response = await fetch('/forms/disciplinary/submit', {
                     method: 'POST',
                     headers: {
@@ -383,34 +380,25 @@
                     })
                 });
 
-                console.log('Response:', response); // Debug log
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
                 const data = await response.json();
-                console.log('Response data:', data); // Debug log
 
                 if (data.success) {
-                    document.getElementById('successMessage').textContent = 'Disciplinary action submitted successfully';
-                    document.getElementById('successMessage').style.display = 'block';
-                    document.getElementById('errorMessage').style.display = 'none';
+                    successMessage.textContent = 'Disciplinary action submitted successfully';
+                    successMessage.style.display = 'block';
+                    errorMessage.style.display = 'none';
                     
-                    // Wait 2 seconds before redirecting
                     setTimeout(() => {
                         window.location.href = '/forms';
                     }, 2000);
                 } else {
-                    document.getElementById('errorMessage').textContent = data.message || 'Error submitting disciplinary action';
-                    document.getElementById('errorMessage').style.display = 'block';
-                    document.getElementById('successMessage').style.display = 'none';
+                    throw new Error(data.message || 'Error submitting disciplinary action');
                 }
             } catch (error) {
-                console.error('Error:', error); // Debug log
-                document.getElementById('errorMessage').textContent = 'Error submitting disciplinary action';
-                document.getElementById('errorMessage').style.display = 'block';
-                document.getElementById('successMessage').style.display = 'none';
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+                successMessage.style.display = 'none';
+            } finally {
+                submitButton.disabled = false;
             }
         });
     </script>
