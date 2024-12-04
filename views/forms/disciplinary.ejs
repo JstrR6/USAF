@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USM Disciplinary Form</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .discipline-container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        .discipline-form {
+            display: none;
+        }
+
+        .search-container input,
+        .discipline-form input,
+        .discipline-form select,
+        .discipline-form textarea {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: black;
+        }
+
+        .search-container input::placeholder,
+        .discipline-form input::placeholder,
+        .discipline-form select::placeholder,
+        .discipline-form textarea::placeholder {
+            color: black;
+            opacity: 0.7;
+        }
+
+        .discipline-form textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            background: #4299e1;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #3182ce;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+            display: none;
+            padding: 1rem;
+            background: rgba(255, 99, 99, 0.1);
+            border-radius: 5px;
+        }
+
+        .success-message {
+            color: #51cf66;
+            margin-bottom: 1rem;
+            display: none;
+            padding: 1rem;
+            background: rgba(81, 207, 102, 0.1);
+            border-radius: 5px;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            color: black;
+        }
+
+        .article-options {
+            margin-bottom: 1rem;
+        }
+
+        .article-content {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .xp-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .xp-option {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .xp-option:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .xp-option.selected {
+            background: #4299e1;
+            color: white;
+        }
+
+        .warning-text {
+            color: #e53e3e;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(229, 62, 62, 0.1);
+            border-radius: 5px;
+        }
+
+        select option {
+            background: #541170;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="discipline-container">
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
+        <div class="search-container">
+            <input type="text" id="usernameSearch" placeholder="Enter username">
+            <button onclick="findUser()">Find</button>
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <form id="disciplineForm" class="discipline-form">
+            <div class="user-info">
+                <p><strong>Username:</strong> <span id="displayUsername"></span></p>
+                <p><strong>Current Rank:</strong> <span id="currentRank"></span></p>
+                <p><strong>Current XP:</strong> <span id="currentXP"></span></p>
+            </div>
+
+            <select id="articleSelect" onchange="showArticleContent()" required>
+                <option value="">Select Article</option>
+                <option value="1">Article 1: Warning</option>
+                <option value="2">Article 2: XP Reduction</option>
+                <option value="3">Article 3: Demotion</option>
+                <option value="4">Article 4: Discharge</option>
+            </select>
+
+            <!-- Article 1: Warning -->
+            <div id="article1Content" class="article-content">
+                <textarea id="warningReason" placeholder="Enter warning reason" required></textarea>
+            </div>
+
+            <!-- Article 2: XP Reduction -->
+            <div id="article2Content" class="article-content">
+                <div class="xp-options">
+                    <div class="xp-option" onclick="selectXPOption('5')">5% Reduction</div>
+                    <div class="xp-option" onclick="selectXPOption('25')">25% Reduction</div>
+                    <div class="xp-option" onclick="selectXPOption('50')">50% Reduction</div>
+                    <div class="xp-option" onclick="selectXPOption('100')">100% Reduction</div>
+                    <div class="xp-option" onclick="selectXPOption('manual')">Manual Amount</div>
+                </div>
+                <div id="manualXPInput" style="display: none;">
+                    <input type="number" id="manualXPAmount" placeholder="Enter XP amount to remove" min="1">
+                </div>
+                <textarea id="xpReason" placeholder="Enter XP reduction reason" required></textarea>
+            </div>
+
+            <!-- Article 3: Demotion -->
+            <div id="article3Content" class="article-content">
+                <select id="demotionRank" required>
+                    <option value="">Select New Rank</option>
+                </select>
+                <textarea id="demotionReason" placeholder="Enter demotion reason" required></textarea>
+            </div>
+
+            <!-- Article 4: Discharge -->
+            <div id="article4Content" class="article-content">
+                <div class="warning-text">
+                    Warning: This action will set the user's rank to Citizen and remove all XP.
+                </div>
+                <textarea id="dischargeReason" placeholder="Enter discharge reason" required></textarea>
+            </div>
+
+            <button type="submit">Submit Disciplinary Action</button>
+            <div class="success-message" id="successMessage"></div>
+        </form>
+    </div>
+
+    <script>
+        let selectedXPOption = '';
+        
+        async function findUser() {
+            const username = document.getElementById('usernameSearch').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const disciplineForm = document.getElementById('disciplineForm');
+            
+            try {
+                const response = await fetch(`/forms/disciplinary/verify/${username}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.querySelector('.search-container').style.display = 'none';
+                    disciplineForm.style.display = 'block';
+                    document.getElementById('displayUsername').textContent = data.username;
+                    document.getElementById('currentRank').textContent = data.currentRank;
+                    document.getElementById('currentXP').textContent = data.currentXP;
+                    
+                    // Add special warning for officers
+                    if (data.isOfficer) {
+                        const warningDiv = document.createElement('div');
+                        warningDiv.className = 'warning-text';
+                        warningDiv.textContent = 'WARNING: You are taking disciplinary action against an officer. This action will be logged and reviewed.';
+                        document.querySelector('.user-info').appendChild(warningDiv);
+                    }
+                    
+                    populateRankOptions(data.currentRank);
+                    errorMessage.style.display = 'none';
+                } else {
+                    errorMessage.textContent = data.message;
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Error finding user';
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        function showArticleContent() {
+            const article = document.getElementById('articleSelect').value;
+            document.querySelectorAll('.article-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            if (article) {
+                document.getElementById(`article${article}Content`).style.display = 'block';
+            }
+        }
+
+        function selectXPOption(option) {
+            document.querySelectorAll('.xp-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            const manualInput = document.getElementById('manualXPInput');
+            
+            if (option === 'manual') {
+                manualInput.style.display = 'block';
+                document.querySelector('.xp-option:last-child').classList.add('selected');
+            } else {
+                manualInput.style.display = 'none';
+                document.querySelector(`.xp-option:nth-child(${['5','25','50','100'].indexOf(option) + 1})`).classList.add('selected');
+            }
+            selectedXPOption = option;
+        }
+
+        function populateRankOptions(currentRank) {
+            const ranks = [
+                'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
+                'Sergeant', 'Staff Sergeant', 'Sergeant First Class', 'Master Sergeant',
+                'First Sergeant', 'Sergeant Major', 'Command Sergeant Major', 'Sergeant Major of the Army'
+            ];
+            
+            const currentRankIndex = ranks.indexOf(currentRank);
+            const select = document.getElementById('demotionRank');
+            select.innerHTML = '<option value="">Select New Rank</option>';
+            
+            // Only show ranks below current rank
+            for (let i = 0; i <= currentRankIndex; i++) {
+                const option = document.createElement('option');
+                option.value = ranks[i];
+                option.textContent = ranks[i];
+                select.appendChild(option);
+            }
+        }
+
+        document.getElementById('disciplineForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const article = document.getElementById('articleSelect').value;
+            const username = document.getElementById('displayUsername').textContent;
+            let details = {};
+
+            switch(article) {
+                case '1':
+                    details.reason = document.getElementById('warningReason').value;
+                    break;
+                case '2':
+                    if (selectedXPOption === 'manual') {
+                        details.type = 'manual';
+                        details.amount = document.getElementById('manualXPAmount').value;
+                    } else {
+                        details.type = 'percentage';
+                        details.percentage = selectedXPOption;
+                    }
+                    details.reason = document.getElementById('xpReason').value;
+                    break;
+                case '3':
+                    details.currentRank = document.getElementById('currentRank').textContent;
+                    details.newRank = document.getElementById('demotionRank').value;
+                    details.reason = document.getElementById('demotionReason').value;
+                    break;
+                case '4':
+                    details.reason = document.getElementById('dischargeReason').value;
+                    break;
+            }
+
+            try {
+                const response = await fetch('/forms/disciplinary/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        article,
+                        details
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('successMessage').textContent = 'Disciplinary action submitted successfully';
+                    document.getElementById('successMessage').style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/forms';
+                    }, 2000);
+                } else {
+                    document.getElementById('errorMessage').textContent = data.message;
+                    document.getElementById('errorMessage').style.display = 'block';
+                }
+            } catch (error) {
+                document.getElementById('errorMessage').textContent = 'Error submitting disciplinary action';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1418,11 +1418,56 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
 // Export route for audit log
 router.get('/forms/auditlog/export', isAuthenticated, isOfficer, async (req, res) => {
     try {
-        const logs = await AuditLog.find({});
+        // Get data from all schemas
+        const [trainings, promotions, awards, placements] = await Promise.all([
+            Training.find(),
+            Promotion.find(),
+            Award.find(),
+            Placement.find()
+        ]);
+
+        // Combine all activities
+        const allActivities = [
+            ...trainings.map(t => ({
+                type: 'Training',
+                username: t.trainees.join('; '),
+                performedBy: t.trainer,
+                details: `XP Amount: ${t.xpAmount}`,
+                status: t.awarded ? 'Approved' : (t.needsApproval ? 'Pending' : 'Processing'),
+                date: t.dateSubmitted
+            })),
+            ...promotions.map(p => ({
+                type: 'Promotion',
+                username: p.username,
+                performedBy: p.submittedBy,
+                details: `${p.currentRank} → ${p.promotionRank}`,
+                status: p.status,
+                date: p.dateSubmitted,
+                approvedBy: p.approvedBy,
+                dateApproved: p.dateApproved
+            })),
+            ...awards.map(a => ({
+                type: 'Award',
+                username: a.username,
+                performedBy: a.submittedBy,
+                details: a.award,
+                status: a.status,
+                date: a.dateSubmitted
+            })),
+            ...placements.map(p => ({
+                type: 'Placement',
+                username: p.username,
+                performedBy: p.submittedBy,
+                details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
+                status: p.status,
+                date: p.dateSubmitted
+            }))
+        ].sort((a, b) => b.date - a.date);
+
         const csv = [
-            'Action Type,Username,Performed By,Status,Timestamp',
-            ...logs.map(log => {
-                return `${log.actionType},${log.username},${log.performedBy},${log.status},${log.timestamp}`;
+            'Type,Username,Performed By,Details,Status,Date,Approved By,Date Approved',
+            ...allActivities.map(activity => {
+                return `${activity.type},${activity.username},${activity.performedBy},${activity.details},${activity.status},${activity.date}${activity.approvedBy ? ',' + activity.approvedBy : ','}${activity.dateApproved ? ',' + activity.dateApproved : ','}`;
             })
         ].join('\n');
 
@@ -1430,7 +1475,174 @@ router.get('/forms/auditlog/export', isAuthenticated, isOfficer, async (req, res
         res.setHeader('Content-Disposition', 'attachment; filename=auditlog.csv');
         res.send(csv);
     } catch (error) {
+        console.error('Export error:', error);
         res.status(500).send('Error exporting audit log');
+    }
+});
+
+router.get('/forms/disciplinary', isAuthenticated, isOfficer, (req, res) => {
+    res.render('forms/disciplinary', {
+        title: 'Disciplinary Form'
+    });
+});
+
+router.get('/forms/disciplinary/verify/:username', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const user = await User.findOne({ username: req.params.username })
+            .populate({
+                path: 'roles',
+                select: 'name id'
+            });
+
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        // Define officer ranks in order of hierarchy
+        const officerRanks = [
+            'Second Lieutenant',
+            'First Lieutenant',
+            'Captain',
+            'Major',
+            'Lieutenant Colonel',
+            'Colonel',
+            'Brigadier General',
+            'Major General',
+            'Lieutenant General',
+            'General',
+            'General of the Army'
+        ];
+
+        // Get current user's rank (the officer submitting the form)
+        const submitterRank = req.user.roles[0]?.name;
+        // Get target user's rank
+        const targetRank = user.roles[0]?.name;
+
+        // Check if target user is an officer
+        const isTargetOfficer = officerRanks.includes(targetRank);
+        if (isTargetOfficer) {
+            // Check submitter's rank position
+            const submitterRankIndex = officerRanks.indexOf(submitterRank);
+            const targetRankIndex = officerRanks.indexOf(targetRank);
+
+            // If submitter's rank isn't higher than target's rank
+            if (submitterRankIndex <= targetRankIndex) {
+                return res.json({ 
+                    success: false, 
+                    message: 'You cannot take disciplinary action against an officer of equal or higher rank.' 
+                });
+            }
+        }
+
+        // If we get here, either the target isn't an officer, or the submitter outranks them
+        return res.json({
+            success: true,
+            username: user.username,
+            currentRank: targetRank,
+            currentXP: user.xp || 0,
+            isOfficer: isTargetOfficer
+        });
+
+    } catch (error) {
+        return res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/forms/disciplinary/submit', isAuthenticated, isOfficer, async (req, res) => {
+    try {
+        const { username, article, details } = req.body;
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.json({ success: false, message: 'User not found' });
+        }
+
+        switch(article) {
+            case '1': // Warning
+                await new UserNote({
+                    username,
+                    noteType: 'Warning',
+                    content: `[Article 1] ${details.reason}`,
+                    addedBy: req.user.username
+                }).save();
+                break;
+
+            case '2': // XP Reduction
+                let xpReduction = 0;
+                if (details.type === 'manual') {
+                    xpReduction = parseInt(details.amount);
+                } else {
+                    const percentage = parseInt(details.percentage);
+                    xpReduction = Math.floor(user.xp * (percentage / 100));
+                }
+                
+                user.xp = Math.max(0, user.xp - xpReduction);
+                await user.save();
+
+                await new UserNote({
+                    username,
+                    noteType: 'Warning',
+                    content: `[Article 2] XP Reduction: ${xpReduction}XP - ${details.reason}`,
+                    addedBy: req.user.username
+                }).save();
+                break;
+
+            case '3': // Demotion
+                const currentRank = details.currentRank;
+                const newRank = details.newRank;
+                
+                // Update Discord role
+                await bot.updateUserRole(user.discordId, newRank);
+                
+                // Set XP to minimum for new rank
+                const ranks = [
+                    { rank: 'Citizen', xp: 0 },
+                    { rank: 'Private', xp: 1 },
+                    { rank: 'Private First Class', xp: 10 },
+                    { rank: 'Specialist', xp: 25 },
+                    { rank: 'Corporal', xp: 40 },
+                    { rank: 'Sergeant', xp: 60 },
+                    { rank: 'Staff Sergeant', xp: 80 },
+                    { rank: 'Sergeant First Class', xp: 100 },
+                    { rank: 'Master Sergeant', xp: 125 },
+                    { rank: 'First Sergeant', xp: 150 },
+                    { rank: 'Sergeant Major', xp: 175 },
+                    { rank: 'Command Sergeant Major', xp: 250 }
+                ];
+                
+                const rankData = ranks.find(r => r.rank === newRank);
+                user.xp = rankData ? rankData.xp : 0;
+                await user.save();
+
+                await new UserNote({
+                    username,
+                    noteType: 'Warning',
+                    content: `[Article 3] Demotion from ${currentRank} to ${newRank} - ${details.reason}`,
+                    addedBy: req.user.username
+                }).save();
+                break;
+
+            case '4': // Discharge
+                // Update to Citizen rank
+                await bot.updateUserRole(user.discordId, 'Citizen');
+                
+                // Reset XP
+                user.xp = 0;
+                await user.save();
+
+                await new UserNote({
+                    username,
+                    noteType: 'Warning',
+                    content: `[Article 4] Discharged: ${details.reason}`,
+                    addedBy: req.user.username
+                }).save();
+                break;
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Disciplinary action error:', error);
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
