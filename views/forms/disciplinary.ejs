@@ -249,7 +249,7 @@
 
     <script>
         let selectedXPOption = '';
-
+    
         async function findUser() {
             const username = document.getElementById('usernameSearch').value;
             const errorMessage = document.getElementById('errorMessage');
@@ -284,7 +284,7 @@
                 errorMessage.style.display = 'block';
             }
         }
-
+    
         function showArticleContent() {
             document.querySelectorAll('.article-content').forEach(content => {
                 content.style.display = 'none';
@@ -293,7 +293,7 @@
                     field.required = false;
                 });
             });
-
+    
             const article = document.getElementById('articleSelect').value;
             if (article) {
                 const articleContent = document.getElementById(`article${article}Content`);
@@ -304,14 +304,14 @@
                 });
             }
         }
-
+    
         function selectXPOption(option) {
             selectedXPOption = option;
             const manualInput = document.getElementById('manualXPInput');
             const manualAmount = document.getElementById('manualXPAmount');
-
+    
             document.querySelectorAll('.xp-option').forEach(opt => opt.classList.remove('selected'));
-
+    
             if (option === 'manual') {
                 manualInput.style.display = 'block';
                 manualAmount.required = true; // Enable validation for manual input
@@ -322,7 +322,7 @@
                 document.querySelector(`.xp-option:nth-child(${['5','25','50','100'].indexOf(option) + 1})`).classList.add('selected');
             }
         }
-
+    
         function populateRankOptions(currentRank) {
             const ranks = [
                 'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
@@ -341,20 +341,20 @@
                 select.appendChild(option);
             }
         }
-
+    
         document.getElementById('disciplineForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
+    
             const submitButton = e.target.querySelector('button[type="submit"]');
             const errorMessage = document.getElementById('errorMessage');
             const successMessage = document.getElementById('successMessage');
-
+    
             submitButton.disabled = true;
-
+    
             try {
                 const article = document.getElementById('articleSelect').value;
                 const username = document.getElementById('displayUsername').textContent;
-
+    
                 // Ensure an article is selected
                 if (!article) {
                     errorMessage.textContent = 'Please select an article.';
@@ -362,14 +362,14 @@
                     submitButton.disabled = false;
                     return;
                 }
-
+    
                 let details = {};
-
+    
                 // Validate visible fields dynamically
                 const visibleFields = [
                     ...document.querySelectorAll(`#article${article}Content [required]:not([style*="display: none"])`)
                 ];
-
+    
                 for (let field of visibleFields) {
                     if (!field.checkValidity()) {
                         errorMessage.textContent = 'Please fill out all required fields.';
@@ -378,7 +378,7 @@
                         return;
                     }
                 }
-
+    
                 // Prepare details based on the selected article
                 switch (article) {
                     case '1':
@@ -403,7 +403,7 @@
                         details.reason = document.getElementById('dischargeReason').value;
                         break;
                 }
-
+    
                 // Submit data to the server
                 const response = await fetch('/forms/disciplinary/submit', {
                     method: 'POST',
@@ -416,14 +416,14 @@
                         details
                     })
                 });
-
+    
                 const data = await response.json();
-
+    
                 if (data.success) {
                     successMessage.textContent = 'Disciplinary action submitted successfully.';
                     successMessage.style.display = 'block';
                     errorMessage.style.display = 'none';
-
+    
                     setTimeout(() => {
                         window.location.href = '/forms';
                     }, 2000);
