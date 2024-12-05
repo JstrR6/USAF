@@ -43,13 +43,6 @@ function setSessionRoles(req) {
     }
 }
 
-app.use((req, res, next) => {
-    if (req.isAuthenticated() && req.user) {
-        setSessionRoles(req);
-    }
-    next();
-});
-
 // Middleware to check if user is an officer
 function isOfficer(req, res, next) {
     const officerRanks = [
@@ -231,7 +224,7 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 });
 
 // Basic - Show all members
-router.get('/members', isAuthenticated, async (req, res, next) => {
+router.get('/members', isAuthenticated, setSessionRolesMiddleware, async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
