@@ -177,22 +177,56 @@
 
         <div class="filters-container">
             <input type="text" id="usernameFilter" placeholder="Search by username" class="filter-input">
+            <select id="rankFilter" class="filter-input">
+                <option value="">All Ranks</option>
+                <option value="asc">Rank (Lowest to Highest)</option>
+                <option value="desc">Rank (Highest to Lowest)</option>
+                <!-- Populated with actual ranks -->
+            </select>
             <select id="specificRankFilter" class="filter-input">
                 <option value="">Select Specific Rank</option>
-                <!-- Populated with valid ranks -->
+                <!-- Populated with all ranks -->
             </select>
             <select id="placementFilter" class="filter-input">
                 <option value="">All Placements</option>
                 <!-- Populated with all placements -->
             </select>
+            <select id="statusFilter" class="filter-input">
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
         </div>
 
         <div class="members-grid">
-            <!-- Member cards will be dynamically inserted here -->
+            <% members.forEach(member => { %>
+                <div class="member-card">
+                    <div class="member-info">
+                        <div class="member-details">
+                            <div><strong>Username:</strong> <%= member.username %></div>
+                            <div><strong>Rank:</strong> <%= member.highestRole %></div>
+                            <div><strong>Placement:</strong> <%= member.placement || 'Not Assigned' %></div>
+                            <div><strong>XP:</strong> <%= member.xp %></div>
+                        </div>
+                        <% if (isOfficer) { %>
+                            <div class="member-actions">
+                                <button class="action-btn" onclick="viewNotes('<%= member.username %>')">
+                                    Notes
+                                </button>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            <% }); %>
         </div>
 
         <div class="pagination">
-            <!-- Pagination buttons will be dynamically inserted here -->
+            <% for(let i = 1; i <= totalPages; i++) { %>
+                <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
+                        onclick="goToPage('<%= i %>')">
+                    <%= i %>
+                </button>
+            <% } %>
         </div>
     </div>
 

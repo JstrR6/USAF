@@ -43,6 +43,13 @@ function setSessionRoles(req) {
     }
 }
 
+app.use((req, res, next) => {
+    if (req.isAuthenticated() && req.user) {
+        setSessionRoles(req);
+    }
+    next();
+});
+
 // Middleware to check if user is an officer
 function isOfficer(req, res, next) {
     const officerRanks = [
@@ -230,76 +237,58 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        // List of valid ranks to display
         const validRanks = [
             'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
             'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
-            'Master Sergeant', 'First Sergeant', 'Sergeant Major', 
+            'Master Sergeant', 'First Sergeant', 'Sergeant Major',
             'Command Sergeant Major', 'Sergeant Major of the Army',
             'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
             'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
             'Lieutenant General', 'General', 'General of the Army'
         ];
 
-        // Fetch total member count with valid ranks
+        // Fetch only users with valid ranks and paginate
         const totalMembers = await User.countDocuments({
             'roles.name': { $in: validRanks }
         });
 
-        // Fetch all members with pagination and only valid ranks
         const users = await User.find({ 'roles.name': { $in: validRanks } })
             .skip(skip)
             .limit(limit)
-            .populate({
-                path: 'roles',
-                select: 'name'
-            });
+            .populate({ path: 'roles', select: 'name' });
 
-        // Fetch the latest placements for all members
+        // Fetch latest placements
         const placements = await Placement.aggregate([
             { $match: { status: 'approved' } },
             { $sort: { dateSubmitted: -1 } },
             { $group: { _id: '$username', latestPlacement: { $first: '$newPlacement' } } }
         ]);
 
-        // Create a map of placements for quick lookup
         const placementMap = placements.reduce((map, placement) => {
             map[placement._id] = placement.latestPlacement;
             return map;
         }, {});
 
-        // Format members with placement data
+        // Format members
         const formattedMembers = users.map(user => ({
             username: user.username,
-            highestRole: user.roles
-                ?.map(role => role.name)
-                ?.find(role => validRanks.includes(role)) || 'No role assigned',
+            highestRole: req.session.roles.find(r => r.name === user.roles?.[0]?.name)?.name || 'No role assigned',
             xp: user.xp || 0,
             placement: placementMap[user.username] || 'Not Assigned'
         }));
 
-        const officerRanks = [
-            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
-            'Lieutenant General', 'General', 'General of the Army'
-        ];
-
-        const isOfficer = req.user.roles.some(role => officerRanks.includes(role.name));
-
         res.render('members', {
             title: 'Members',
             members: formattedMembers,
-            isOfficer,
             currentPage: page,
             totalPages: Math.ceil(totalMembers / limit),
-            officerRanks // Pass ranks for filter dropdown
+            highestRole: req.session.highestRole // Use session-stored highest role if needed
         });
-    } catch (err) {
-        console.error('Error loading members:', err);
-        next(err);
+    } catch (error) {
+        console.error('Error fetching members:', error);
+        next(error);
     }
 });
-
 
 // Add filter route
 router.get('/members/filter', isAuthenticated, async (req, res) => {
