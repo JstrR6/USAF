@@ -120,17 +120,55 @@
         .type-Training {
             background-color: #4299e1; 
         }
+
         .type-Promotion {
             background-color: #48bb78; 
         }
+
         .type-Award {
             background-color: #ed8936; 
         }
+
         .type-Placement {
             background-color: #9f7aea; 
         }
+
         .type-Note {
             background-color: #e53e3e; 
+        }
+
+        /* Type Colors */
+        .type-Warning {
+            background-color: #ed8936; /* Orange */
+        }
+        .type-General {
+            background-color: #a0aec0; /* Gray */
+        }
+        .type-Recommendation {
+            background-color: #48bb78; /* Green */
+        }
+        .type-Training {
+            background-color: #4299e1; /* Blue */
+        }
+
+        /* Status Colors */
+        .status-approved {
+            background-color: #48bb78; /* Green */
+            color: white;
+            border-radius: 15px;
+            padding: 0.25rem 0.75rem;
+        }
+        .status-pending {
+            background-color: #ed8936; /* Orange */
+            color: white;
+            border-radius: 15px;
+            padding: 0.25rem 0.75rem;
+        }
+        .status-rejected {
+            background-color: #e53e3e; /* Red */
+            color: white;
+            border-radius: 15px;
+            padding: 0.25rem 0.75rem;
         }
 
         .status-badge {
@@ -244,11 +282,9 @@
                     <div class="activity-card">
                         <div class="activity-row">
                             <strong>Type:</strong>
-                            <span class="type-badge type-<%= activity.type %>"><%= activity.type %></span>
-                        </div>
-                        <div class="activity-row">
-                            <strong>Username:</strong>
-                            <span><%= activity.username %></span>
+                            <span class="type-badge type-<%= activity.type === 'Note' ? activity.status : activity.type %>">
+                                <%= activity.type %>
+                            </span>
                         </div>
                         <% if (activity.type === 'Note') { %>
                             <div class="activity-row">
@@ -259,15 +295,89 @@
                                 <strong>Content:</strong>
                                 <span><%= activity.details %></span>
                             </div>
-                        <% } %>
-                        <div class="activity-row">
-                            <strong>Date:</strong>
-                            <span><%= new Date(activity.date).toLocaleString() %></span>
-                        </div>
-                        <% if (activity.approvedBy) { %>
+                        <% } else if (activity.type === 'Training') { %>
                             <div class="activity-row">
-                                <strong>Approved By:</strong>
-                                <span><%= activity.approvedBy %> on <%= new Date(activity.dateApproved).toLocaleString() %></span>
+                                <strong>Trainer:</strong>
+                                <span><%= activity.trainer %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Trainee(s):</strong>
+                                <span><%= activity.trainees %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>XP Amount:</strong>
+                                <span><%= activity.xpAmount %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Status:</strong>
+                                <span class="<%= activity.status === 'Pending' ? 'status-pending' : 'status-approved' %>">
+                                    <%= activity.status %>
+                                </span>
+                            </div>
+                        <% } else if (activity.type === 'Promotion') { %>
+                            <div class="activity-row">
+                                <strong>User:</strong>
+                                <span><%= activity.username %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Current Rank:</strong>
+                                <span><%= activity.currentRank %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Promotion Rank:</strong>
+                                <span><%= activity.promotionRank %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Submitted By:</strong>
+                                <span><%= activity.submittedBy %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Date:</strong>
+                                <span><%= new Date(activity.date).toLocaleString() %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Status:</strong>
+                                <span class="<%= activity.status === 'Approved' ? 'status-approved' : 'status-rejected' %>">
+                                    <%= activity.status %>
+                                </span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Reason:</strong>
+                                <span><%= activity.reason %></span>
+                            </div>
+                        <% } else if (activity.type === 'Award') { %>
+                            <div class="activity-row">
+                                <strong>Username:</strong>
+                                <span><%= activity.username %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Award:</strong>
+                                <span><%= activity.details %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Submitted By:</strong>
+                                <span><%= activity.submittedBy %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Date:</strong>
+                                <span><%= new Date(activity.date).toLocaleString() %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Reason:</strong>
+                                <span><%= activity.reason %></span>
+                            </div>
+                        <% } else if (activity.type === 'Placement') { %>
+                            <div class="activity-row">
+                                <strong>Username:</strong>
+                                <span><%= activity.username %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Placement:</strong>
+                                <span><%= activity.details %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Placement Rank:</strong>
+                                <span><%= activity.placementRank %></span>
                             </div>
                         <% } %>
                     </div>
