@@ -250,10 +250,16 @@
                             <strong>Username:</strong>
                             <span><%= activity.username %></span>
                         </div>
-                        <div class="activity-row">
-                            <strong>Details:</strong>
-                            <span><%= activity.details %></span>
-                        </div>
+                        <% if (activity.type === 'Note') { %>
+                            <div class="activity-row">
+                                <strong>Note Type:</strong>
+                                <span><%= activity.status %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Content:</strong>
+                                <span><%= activity.details %></span>
+                            </div>
+                        <% } %>
                         <div class="activity-row">
                             <strong>Date:</strong>
                             <span><%= new Date(activity.date).toLocaleString() %></span>
@@ -261,7 +267,7 @@
                         <% if (activity.approvedBy) { %>
                             <div class="activity-row">
                                 <strong>Approved By:</strong>
-                                <span><%= activity.approvedBy %></span>
+                                <span><%= activity.approvedBy %> on <%= new Date(activity.dateApproved).toLocaleString() %></span>
                             </div>
                         <% } %>
                     </div>
@@ -297,7 +303,9 @@
             try {
                 const response = await fetch('/forms/auditlog/filter', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({ search, type, status, sort })
                 });
 
@@ -312,8 +320,13 @@
 
         function updateActivitiesDisplay(activities) {
             const container = document.querySelector('.activities-list');
+            
             if (activities.length === 0) {
-                container.innerHTML = '<div class="no-activities">No activities found.</div>';
+                container.innerHTML = `
+                    <div class="no-activities">
+                        <h3>No activities found.</h3>
+                    </div>
+                `;
                 return;
             }
 
@@ -321,19 +334,41 @@
                 <div class="activity-card">
                     <div class="activity-row">
                         <strong>Type:</strong>
-                        <span class="type-badge">${activity.type}</span>
+                        <span class="type-badge type-${activity.type}">${activity.type}</span>
                     </div>
                     <div class="activity-row">
                         <strong>Username:</strong>
                         <span>${activity.username}</span>
                     </div>
+                    ${activity.type === 'Note' ? `
+                        <div class="activity-row">
+                            <strong>Note Type:</strong>
+                            <span>${activity.status}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Content:</strong>
+                            <span>${activity.details}</span>
+                        </div>
+                    ` : ''}
                     <div class="activity-row">
                         <strong>Date:</strong>
                         <span>${new Date(activity.date).toLocaleString()}</span>
                     </div>
+                    ${activity.approvedBy ? `
+                        <div class="activity-row">
+                            <strong>Approved By:</strong>
+                            <span>${activity.approvedBy} on ${new Date(activity.dateApproved).toLocaleString()}</span>
+                        </div>
+                    ` : ''}
                 </div>
             `).join('');
         }
+
+        // Add event listeners for filters
+        document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('sortFilter').addEventListener('change', applyFilters);
     </script>
 </body>
 </html>
