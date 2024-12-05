@@ -309,26 +309,33 @@
             const noteType = document.getElementById('noteTypeFilter').value; // Get selected note type
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-    
+
+            const payload = {
+                search,
+                type,
+                status,
+                noteType: type === 'Note' ? noteType : undefined, // Only include noteType if "Note" is selected
+                startDate,
+                endDate
+            };
+
+            console.log('Filter payload:', payload); // Log payload for debugging
+
             try {
                 const response = await fetch('/forms/auditlog/filter', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        search,
-                        type,
-                        status,
-                        noteType,
-                        startDate,
-                        endDate
-                    })
+                    body: JSON.stringify(payload)
                 });
-    
+
                 const data = await response.json();
                 if (data.success) {
+                    console.log('Filtered activities:', data.activities); // Log the filtered activities for debugging
                     updateActivitiesDisplay(data.activities);
+                } else {
+                    console.error('Filtering error:', data.error);
                 }
             } catch (error) {
                 console.error('Error applying filters:', error);

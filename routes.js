@@ -1313,6 +1313,8 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
     try {
         const { search, type, status, startDate, endDate, noteType } = req.body;
 
+        console.log('Filter received:', req.body); // Log incoming filters
+
         const [trainings, promotions, awards, placements, notes] = await Promise.all([
             Training.find(),
             Promotion.find(),
@@ -1392,8 +1394,10 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
             );
         }
 
+        console.log('Filtered activities:', allActivities); // Log the filtered results
         res.json({ success: true, activities: allActivities });
     } catch (error) {
+        console.error('Error filtering logs:', error);
         res.status(500).json({ success: false, error: 'Error filtering logs' });
     }
 });
