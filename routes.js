@@ -307,7 +307,9 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
 
         // Specific rank filter
         if (specificRank) {
-            query['roles.name'] = specificRank;
+            if (specificRank !== '') {
+                query['roles.name'] = specificRank;
+            }
         } else {
             // If no specific rank is selected, exclude certain ranks
             query['roles.name'] = { $nin: [
