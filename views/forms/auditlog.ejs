@@ -84,8 +84,13 @@
             padding: 0.75rem;
             border: none;
             border-radius: 5px;
-            background: rgba(0, 0, 0, 0.31);
+            background: rgba(255, 255, 255, 0.1);
             color: black;
+        }
+
+        .filter-input::placeholder {
+            color: black;
+            opacity: 0.7;
         }
 
         .filter-input option {
@@ -114,68 +119,28 @@
             border-radius: 15px;
             font-size: 0.875rem;
             color: white;
-            text-align: center;
         }
 
-        .type-Training {
-            background-color: #4299e1; 
-        }
-
-        .type-Promotion {
-            background-color: #48bb78; 
-        }
-
-        .type-Award {
-            background-color: #ed8936; 
-        }
-
-        .type-Placement {
-            background-color: #9f7aea; 
-        }
-
-        .type-Note {
-            background-color: #e53e3e; 
-        }
-
-        /* Type Colors */
-        .type-Warning {
-            background-color: #ed8936; /* Orange */
-        }
-        .type-General {
-            background-color: #a0aec0; /* Gray */
-        }
-        .type-Recommendation {
-            background-color: #48bb78; /* Green */
-        }
-        .type-Training {
-            background-color: #4299e1; /* Blue */
-        }
-
-        /* Status Colors */
-        .status-approved {
-            background-color: #48bb78; /* Green */
-            color: white;
-            border-radius: 15px;
-            padding: 0.25rem 0.75rem;
-        }
-        .status-pending {
-            background-color: #ed8936; /* Orange */
-            color: white;
-            border-radius: 15px;
-            padding: 0.25rem 0.75rem;
-        }
-        .status-rejected {
-            background-color: #e53e3e; /* Red */
-            color: white;
-            border-radius: 15px;
-            padding: 0.25rem 0.75rem;
-        }
+        .type-Training { background-color: #4299e1; }
+        .type-Promotion { background-color: #48bb78; }
+        .type-Award { background-color: #ed8936; }
+        .type-Placement { background-color: #9f7aea; }
+        .type-Warning { background-color: #ed8936; }
+        .type-General { background-color: #a0aec0; }
+        .type-Recommendation { background-color: #48bb78; }
+        .type-Disciplinary { background-color: #e53e3e; }
 
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 15px;
             font-size: 0.875rem;
+            color: white;
         }
+
+        .status-approved { background-color: #48bb78; }
+        .status-pending { background-color: #ed8936; }
+        .status-rejected { background-color: #e53e3e; }
+        .status-processing { background-color: #4299e1; }
 
         .export-btn {
             background: #48bb78;
@@ -224,7 +189,7 @@
 </head>
 <body>
     <div class="audit-container">
-        <h2>Audit Log</h2>
+        <h2 style="color: white; margin-bottom: 2rem;">Audit Log</h2>
 
         <nav class="nav-menu">
             <a href="/dashboard" class="nav-item">Dashboard</a>
@@ -249,6 +214,10 @@
             <div class="stat-card">
                 <div>Awards</div>
                 <div class="stat-number"><%= stats.byType.Award %></div>
+            </div>
+            <div class="stat-card">
+                <div>Notes</div>
+                <div class="stat-number"><%= stats.byType.Note %></div>
             </div>
         </div>
 
@@ -282,18 +251,31 @@
                     <div class="activity-card">
                         <div class="activity-row">
                             <strong>Type:</strong>
-                            <span class="type-badge type-<%= activity.type %>">
+                            <span class="type-badge type-<%= activity.type === 'Note' ? activity.noteType : activity.type %>">
                                 <%= activity.type %>
                             </span>
                         </div>
+
                         <% if (activity.type === 'Note') { %>
                             <div class="activity-row">
+                                <strong>Username:</strong>
+                                <span><%= activity.username %></span>
+                            </div>
+                            <div class="activity-row">
                                 <strong>Note Type:</strong>
-                                <span><%= activity.status %></span>
+                                <span><%= activity.noteType %></span>
                             </div>
                             <div class="activity-row">
                                 <strong>Content:</strong>
-                                <span><%= activity.details %></span>
+                                <span><%= activity.content %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Added By:</strong>
+                                <span><%= activity.addedBy %></span>
+                            </div>
+                            <div class="activity-row">
+                                <strong>Date:</strong>
+                                <span><%= new Date(activity.date).toLocaleString() %></span>
                             </div>
                         <% } else if (activity.type === 'Training') { %>
                             <div class="activity-row">
@@ -301,7 +283,7 @@
                                 <span><%= activity.trainer %></span>
                             </div>
                             <div class="activity-row">
-                                <strong>Trainee(s):</strong>
+                                <strong>Trainees:</strong>
                                 <span><%= activity.trainees %></span>
                             </div>
                             <div class="activity-row">
@@ -309,14 +291,18 @@
                                 <span><%= activity.xpAmount %></span>
                             </div>
                             <div class="activity-row">
+                                <strong>Date:</strong>
+                                <span><%= new Date(activity.date).toLocaleString() %></span>
+                            </div>
+                            <div class="activity-row">
                                 <strong>Status:</strong>
-                                <span class="<%= activity.status === 'Pending' ? 'status-pending' : 'status-approved' %>">
+                                <span class="status-badge status-<%= activity.status.toLowerCase() %>">
                                     <%= activity.status %>
                                 </span>
                             </div>
                         <% } else if (activity.type === 'Promotion') { %>
                             <div class="activity-row">
-                                <strong>User:</strong>
+                                <strong>Username:</strong>
                                 <span><%= activity.username %></span>
                             </div>
                             <div class="activity-row">
@@ -337,7 +323,7 @@
                             </div>
                             <div class="activity-row">
                                 <strong>Status:</strong>
-                                <span class="<%= activity.status === 'Approved' ? 'status-approved' : 'status-rejected' %>">
+                                <span class="status-badge status-<%= activity.status.toLowerCase() %>">
                                     <%= activity.status %>
                                 </span>
                             </div>
@@ -345,6 +331,12 @@
                                 <strong>Reason:</strong>
                                 <span><%= activity.reason %></span>
                             </div>
+                            <% if (activity.approvedBy) { %>
+                                <div class="activity-row">
+                                    <strong>Handled By:</strong>
+                                    <span><%= activity.approvedBy %> on <%= new Date(activity.dateApproved).toLocaleString() %></span>
+                                </div>
+                            <% } %>
                         <% } else if (activity.type === 'Award') { %>
                             <div class="activity-row">
                                 <strong>Username:</strong>
@@ -363,6 +355,12 @@
                                 <span><%= new Date(activity.date).toLocaleString() %></span>
                             </div>
                             <div class="activity-row">
+                                <strong>Status:</strong>
+                                <span class="status-badge status-<%= activity.status.toLowerCase() %>">
+                                    <%= activity.status %>
+                                </span>
+                            </div>
+                            <div class="activity-row">
                                 <strong>Reason:</strong>
                                 <span><%= activity.reason %></span>
                             </div>
@@ -379,6 +377,10 @@
                                 <strong>Placement Rank:</strong>
                                 <span><%= activity.placementRank %></span>
                             </div>
+                            <div class="activity-row">
+                                <strong>Date:</strong>
+                                <span><%= new Date(activity.date).toLocaleString() %></span>
+                            </div>
                         <% } %>
                     </div>
                 <% }); %>
@@ -388,6 +390,17 @@
                 </div>
             <% } %>
         </div>
+
+        <% if (totalPages > 1) { %>
+            <div class="pagination">
+                <% for(let i = 1; i <= totalPages; i++) { %>
+                    <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
+                            onclick="window.location.href='/forms/auditlog?page=<%= i %>'">
+                        <%= i %>
+                    </button>
+                <% } %>
+            </div>
+        <% } %>
     </div>
 
     <script>
@@ -398,7 +411,7 @@
 
         function debounce(func, wait) {
             let timeout;
-            return function (...args) {
+            return function(...args) {
                 clearTimeout(timeout);
                 timeout = setTimeout(() => func(...args), wait);
             };
@@ -479,7 +492,7 @@
                             <span>${activity.trainer}</span>
                         </div>
                         <div class="activity-row">
-                            <strong>Trainee(s):</strong>
+                            <strong>Trainees:</strong>
                             <span>${activity.trainees}</span>
                         </div>
                         <div class="activity-row">
@@ -528,6 +541,13 @@
                             <strong>Reason:</strong>
                             <span>${activity.reason}</span>
                         </div>`;
+                    if (activity.approvedBy) {
+                        html += `
+                            <div class="activity-row">
+                                <strong>Handled By:</strong>
+                                <span>${activity.approvedBy} on ${new Date(activity.dateApproved).toLocaleString()}</span>
+                            </div>`;
+                    }
                 } else if (activity.type === 'Award') {
                     html += `
                         <div class="activity-row">
@@ -545,6 +565,12 @@
                         <div class="activity-row">
                             <strong>Date:</strong>
                             <span>${new Date(activity.date).toLocaleString()}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Status:</strong>
+                            <span class="status-badge status-${activity.status.toLowerCase()}">
+                                ${activity.status}
+                            </span>
                         </div>
                         <div class="activity-row">
                             <strong>Reason:</strong>
@@ -570,24 +596,10 @@
                         </div>`;
                 }
 
-                if (activity.approvedBy && activity.type !== 'Note') {
-                    html += `
-                        <div class="activity-row">
-                            <strong>Handled By:</strong>
-                            <span>${activity.approvedBy} on ${new Date(activity.dateApproved).toLocaleString()}</span>
-                        </div>`;
-                }
-
                 html += `</div>`;
                 return html;
             }).join('');
         }
-
-        // Add event listeners for filters
-        document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
-        document.getElementById('typeFilter').addEventListener('change', applyFilters);
-        document.getElementById('statusFilter').addEventListener('change', applyFilters);
-        document.getElementById('sortFilter').addEventListener('change', applyFilters);
     </script>
 </body>
 </html>

@@ -1229,74 +1229,82 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        // Include UserNote in the initial fetch
         const [trainings, promotions, awards, placements, notes] = await Promise.all([
             Training.find().sort({ dateSubmitted: -1 }),
             Promotion.find().sort({ dateSubmitted: -1 }),
             Award.find().sort({ dateSubmitted: -1 }),
             Placement.find().sort({ dateSubmitted: -1 }),
-            UserNote.find().sort({ dateAdded: -1 })  // Added notes
+            UserNote.find().sort({ dateAdded: -1 })
         ]);
 
         const allActivities = [
             ...trainings.map(t => ({
                 type: 'Training',
-                trainer: t.trainer,           // Added for displaying trainer
+                trainer: t.trainer,
                 trainees: t.trainees.join(', '),
-                xpAmount: t.xpAmount,        // Added for displaying XP amount
+                xpAmount: t.xpAmount,
                 username: t.trainees.join(', '),
                 performedBy: t.trainer,
                 details: `XP Amount: ${t.xpAmount}`,
                 status: t.awarded ? 'Approved' : (t.needsApproval ? 'Pending' : 'Processing'),
-                date: t.dateSubmitted
+                date: t.dateSubmitted,
+                submittedBy: t.trainer,
+                dateSubmitted: t.dateSubmitted
             })),
             ...promotions.map(p => ({
                 type: 'Promotion',
                 username: p.username,
-                currentRank: p.currentRank,   // Added for displaying ranks
+                currentRank: p.currentRank,
                 promotionRank: p.promotionRank,
-                reason: p.reason,             // Added for displaying reason
+                reason: p.reason,
                 submittedBy: p.submittedBy,
                 performedBy: p.submittedBy,
                 details: `${p.currentRank} → ${p.promotionRank}`,
                 status: p.status,
                 date: p.dateSubmitted,
                 approvedBy: p.approvedBy,
-                dateApproved: p.dateApproved
+                dateApproved: p.dateApproved,
+                dateSubmitted: p.dateSubmitted
             })),
             ...awards.map(a => ({
                 type: 'Award',
                 username: a.username,
+                award: a.award,
+                reason: a.reason,
                 submittedBy: a.submittedBy,
-                reason: a.reason,             // Added for displaying reason
                 performedBy: a.submittedBy,
                 details: a.award,
                 status: a.status,
-                date: a.dateSubmitted
+                date: a.dateSubmitted,
+                dateSubmitted: a.dateSubmitted
             })),
             ...placements.map(p => ({
                 type: 'Placement',
                 username: p.username,
-                placementRank: p.placementRank, // Added for displaying rank
+                placementRank: p.placementRank,
+                currentPlacement: p.currentPlacement,
+                newPlacement: p.newPlacement,
                 performedBy: p.submittedBy,
+                submittedBy: p.submittedBy,
                 details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
                 status: p.status,
-                date: p.dateSubmitted
+                date: p.dateSubmitted,
+                dateSubmitted: p.dateSubmitted
             })),
             ...notes.map(n => ({
                 type: 'Note',
                 username: n.username,
                 performedBy: n.addedBy,
                 details: n.content,
+                content: n.content,
                 status: n.noteType,
+                noteType: n.noteType,
                 date: n.dateAdded,
-                noteType: n.noteType,  // Add this for consistency
-                content: n.content,    // Add this for consistency
-                addedBy: n.addedBy    // Add this for consistency
+                addedBy: n.addedBy,
+                dateAdded: n.dateAdded
             }))
         ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        // Calculate statistics
         const stats = {
             total: allActivities.length,
             byType: {
@@ -1305,15 +1313,9 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
                 Award: awards.length,
                 Placement: placements.length,
                 Note: notes.length
-            },
-            byStatus: {
-                Pending: allActivities.filter(a => a.status === 'pending').length,
-                Approved: allActivities.filter(a => a.status === 'approved').length,
-                Rejected: allActivities.filter(a => a.status === 'rejected').length
             }
         };
 
-        // Paginate activities
         const paginatedActivities = allActivities.slice(skip, skip + limit);
         const totalPages = Math.ceil(allActivities.length / limit);
 
@@ -1346,49 +1348,71 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
         let activities = [
             ...trainings.map(t => ({
                 type: 'Training',
+                trainer: t.trainer,
+                trainees: t.trainees.join(', '),
+                xpAmount: t.xpAmount,
                 username: t.trainees.join(', '),
                 performedBy: t.trainer,
                 details: `XP Amount: ${t.xpAmount}`,
                 status: t.awarded ? 'Approved' : (t.needsApproval ? 'Pending' : 'Processing'),
-                date: t.dateSubmitted
+                date: t.dateSubmitted,
+                submittedBy: t.trainer,
+                dateSubmitted: t.dateSubmitted
             })),
             ...promotions.map(p => ({
                 type: 'Promotion',
                 username: p.username,
+                currentRank: p.currentRank,
+                promotionRank: p.promotionRank,
+                reason: p.reason,
+                submittedBy: p.submittedBy,
                 performedBy: p.submittedBy,
                 details: `${p.currentRank} → ${p.promotionRank}`,
                 status: p.status,
                 date: p.dateSubmitted,
                 approvedBy: p.approvedBy,
-                dateApproved: p.dateApproved
+                dateApproved: p.dateApproved,
+                dateSubmitted: p.dateSubmitted
             })),
             ...awards.map(a => ({
                 type: 'Award',
                 username: a.username,
+                award: a.award,
+                reason: a.reason,
+                submittedBy: a.submittedBy,
                 performedBy: a.submittedBy,
                 details: a.award,
                 status: a.status,
-                date: a.dateSubmitted
+                date: a.dateSubmitted,
+                dateSubmitted: a.dateSubmitted
             })),
             ...placements.map(p => ({
                 type: 'Placement',
                 username: p.username,
+                placementRank: p.placementRank,
+                currentPlacement: p.currentPlacement,
+                newPlacement: p.newPlacement,
                 performedBy: p.submittedBy,
+                submittedBy: p.submittedBy,
                 details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
                 status: p.status,
-                date: p.dateSubmitted
+                date: p.dateSubmitted,
+                dateSubmitted: p.dateSubmitted
             })),
             ...notes.map(n => ({
                 type: 'Note',
-                username: n.username, // Correctly use the `username` field
-                performedBy: n.addedBy, // Use `addedBy` for the performedBy field
-                details: n.content, // Use `content` for the details
-                status: n.noteType, // Use `noteType` for the status
-                date: n.dateAdded // Use `dateAdded` for the date
+                username: n.username,
+                performedBy: n.addedBy,
+                details: n.content,
+                content: n.content,
+                status: n.noteType,
+                noteType: n.noteType,
+                date: n.dateAdded,
+                addedBy: n.addedBy,
+                dateAdded: n.dateAdded
             }))
         ];
 
-        // Apply filters
         if (search) {
             const regex = new RegExp(search, 'i');
             activities = activities.filter(a => regex.test(a.username) || regex.test(a.details));
