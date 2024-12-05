@@ -306,17 +306,8 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
         }
 
         // Specific rank filter
-        if (specificRank) {
-            if (specificRank !== '') {
-                query['roles.name'] = specificRank;
-            }
-        } else {
-            // If no specific rank is selected, exclude certain ranks
-            query['roles.name'] = { $nin: [
-                'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-                'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-                'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
-            ] };
+        if (specificRank && specificRank !== '') {
+            query['roles.name'] = specificRank;
         }
 
         // Status filter (using last login)
