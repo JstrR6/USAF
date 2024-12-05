@@ -224,240 +224,101 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 });
 
 // Basic - Show all members
-router.get('/members', isAuthenticated, setSessionRoles, async (req, res, next) => {
+router.get('/members', isAuthenticated, async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = 10;
-        const skip = (page - 1) * limit;
-
-        const validRanks = [
-            'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
-            'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
-            'Master Sergeant', 'First Sergeant', 'Sergeant Major',
-            'Command Sergeant Major', 'Sergeant Major of the Army',
-            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
-            'Lieutenant General', 'General', 'General of the Army'
-        ];
-
-        // Fetch only users with valid ranks and paginate
-        const totalMembers = await User.countDocuments({
-            'roles.name': { $in: validRanks }
-        });
-
-        const users = await User.find({ 'roles.name': { $in: validRanks } })
-            .skip(skip)
-            .limit(limit)
-            .populate({ path: 'roles', select: 'name' });
-
-        // Fetch latest placements
-        const placements = await Placement.aggregate([
-            { $match: { status: 'approved' } },
-            { $sort: { dateSubmitted: -1 } },
-            { $group: { _id: '$username', latestPlacement: { $first: '$newPlacement' } } }
-        ]);
-
-        const placementMap = placements.reduce((map, placement) => {
-            map[placement._id] = placement.latestPlacement;
-            return map;
-        }, {});
-
-        // Format members
-        const formattedMembers = users.map(user => ({
-            username: user.username,
-            highestRole: req.session.roles.find(r => r.name === user.roles?.[0]?.name)?.name || 'No role assigned',
-            xp: user.xp || 0,
-            placement: placementMap[user.username] || 'Not Assigned'
-        }));
-
-        res.render('members', {
-            title: 'Members',
-            members: formattedMembers,
-            currentPage: page,
-            totalPages: Math.ceil(totalMembers / limit),
-            highestRole: req.session.highestRole // Use session-stored highest role if needed
-        });
+        const members = await User.find().select('username').sort({ username: 1 });
+        res.json({ success: true, members });
     } catch (error) {
-        console.error('Error fetching members:', error);
-        next(error);
+        console.error('Error fetching members list:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
 
-// Add filter route
-router.get('/members/filter', isAuthenticated, async (req, res) => {
+// GET: Member lookup by username
+router.get('/members/lookup/:username', isAuthenticated, async (req, res) => {
     try {
-        const { username, rank, specificRank, placement, status } = req.query;
-        let query = {};
+        const user = await User.findOne({ username: req.params.username })
+            .populate({ path: 'roles', select: 'name id' });
 
-        // Username filter
-        if (username) {
-            query.username = { $regex: username, $options: 'i' }; // Case-insensitive search
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // Specific rank filter
-        if (specificRank && specificRank !== '') {
-            query['roles.name'] = specificRank;
-        }
+        const placement = await Placement.findOne(
+            { username: user.username, status: 'approved' },
+            {},
+            { sort: { dateSubmitted: -1 } }
+        );
 
-        // Status filter (using last login)
-        if (status) {
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-            query.lastLogin = status === 'active'
-                ? { $gte: thirtyDaysAgo }
-                : { $lt: thirtyDaysAgo };
-        }
+        const trainingsAsTrainer = await Training.find({ trainer: user.username, awarded: true }).sort({ dateSubmitted: -1 });
+        const trainingsAsTrainee = await Training.find({ trainees: user.username, awarded: true }).sort({ dateSubmitted: -1 });
+        const promotions = await Promotion.find({ username: user.username, status: 'approved' }).sort({ dateSubmitted: -1 });
+        const awards = await Award.find({ username: user.username, status: 'approved' }).sort({ dateSubmitted: -1 });
+        const notes = await UserNote.find({ username: user.username }).sort({ dateAdded: -1 });
 
-        // Fetch users based on the query
-        const users = await User.find(query).populate({
-            path: 'roles',
-            select: 'name'
+        const awardCounts = {};
+        awards.forEach((award) => {
+            awardCounts[award.award] = (awardCounts[award.award] || 0) + 1;
         });
 
-        if (users.length === 0) {
-            return res.json({ success: true, members: [] });
-        }
+        const response = {
+            user: {
+                username: user.username,
+                xp: user.xp,
+                roles: user.roles.map((r) => r.name),
+            },
+            currentRank: user.roles.length > 0 ? user.roles[0].name : 'No Rank',
+            placement: placement ? placement.newPlacement : 'Not Assigned',
+            trainingStats: {
+                totalAsTrainer: trainingsAsTrainer.length,
+                totalAsTrainee: trainingsAsTrainee.length,
+                xpEarned: trainingsAsTrainee.reduce((sum, t) => sum + t.xpAmount, 0),
+            },
+            promotions,
+            awards,
+            awardCounts,
+            notes, // Include notes
+        };
 
-        // Fetch latest placements for all users
-        const placements = await Placement.aggregate([
-            { $match: { status: 'approved' } },
-            { $sort: { dateSubmitted: -1 } },
-            { $group: { _id: '$username', latestPlacement: { $first: '$newPlacement' } } }
-        ]);
-
-        const placementMap = placements.reduce((map, placement) => {
-            map[placement._id] = placement.latestPlacement;
-            return map;
-        }, {});
-
-        // Filter users by placement if a placement filter is applied
-        let filteredUsers = users;
-        if (placement) {
-            filteredUsers = users.filter(user => {
-                const userPlacement = placementMap[user.username] || 'Not Assigned';
-                return userPlacement === placement;
-            });
-        }
-
-        // Format users with their placements
-        const formattedUsers = filteredUsers.map(user => ({
-            username: user.username,
-            highestRole: user.roles?.[0]?.name || 'No role assigned',
-            xp: user.xp || 0,
-            placement: placementMap[user.username] || 'Not Assigned'
-        }));
-
-        // Rank sorting
-        if (rank === 'asc' || rank === 'desc') {
-            const rankOrder = [
-                'Citizen', 'Private', 'Private First Class', 'Specialist',
-                'Corporal', 'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
-                'Master Sergeant', 'First Sergeant', 'Sergeant Major',
-                'Command Sergeant Major', 'Sergeant Major of the Army',
-                'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-                'Lieutenant Colonel', 'Colonel', 'Brigadier General',
-                'Major General', 'Lieutenant General', 'General',
-                'General of the Army'
-            ];
-
-            formattedUsers.sort((a, b) => {
-                const aRank = rankOrder.indexOf(a.highestRole);
-                const bRank = rankOrder.indexOf(b.highestRole);
-                return rank === 'asc' ? aRank - bRank : bRank - aRank;
-            });
-        }
-
-        res.json({ success: true, members: formattedUsers });
+        res.json({ success: true, profile: response });
     } catch (error) {
-        console.error('Error fetching members with placements:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// Get all unique placements and ranks
-router.get('/members/filter-options', isAuthenticated, async (req, res) => {
-    try {
-        const units = await Unit.find().distinct('name');
-        const ranks = await User.distinct('roles.name');
-
-        // Filter out excluded ranks
-        const excludedRanks = [
-            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
-        ];
-        const filteredRanks = ranks.filter(rank => !excludedRanks.includes(rank));
-
-        res.json({ success: true, units, ranks: filteredRanks });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-// Notes system routes
-router.get('/members/notes/:username', isAuthenticated, isOfficer, async (req, res) => {
-    try {
-        const notes = await UserNote.find({ username: req.params.username })
-            .sort({ dateAdded: -1 });
-        res.json({ success: true, notes });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error fetching profile:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
 
 router.post('/members/notes/add', isAuthenticated, isOfficer, async (req, res) => {
     try {
         const { username, noteType, content } = req.body;
-        
+
+        // Validate input
+        if (!username || !noteType || !content) {
+            return res.status(400).json({ success: false, message: 'All fields are required.' });
+        }
+
+        // Verify the user exists
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        // Create the note
         const note = new UserNote({
             username,
             noteType,
             content,
-            addedBy: req.user.username
+            addedBy: req.user.username,
+            dateAdded: new Date(),
         });
-        
+
         await note.save();
-        res.json({ success: true });
+
+        res.json({ success: true, message: 'Note added successfully.', note });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error adding note:', error);
+        res.status(500).json({ success: false, message: 'Error adding note.' });
     }
 });
-
-// Member search route
-router.get('/members/search', isAuthenticated, async (req, res) => {
-    try {
-        const searchQuery = req.query.username;
-        const members = await User.find({
-            username: { $regex: searchQuery, $options: 'i' }
-        })
-        .select('username roles xp')
-        .populate({
-            path: 'roles',
-            select: 'name id'
-        });
-
-        const excludedRoles = [
-            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
-        ];
-
-        const formattedMembers = members.map(member => {
-            const userRoles = (member.roles || []).filter(role => {
-                return role?.name && !excludedRoles.includes(role.name);
-            });
-
-            return {
-                username: member.username,
-                highestRole: userRoles.length > 0 ? userRoles[0].name : 'No role assigned',
-                xp: member.xp || 0
-            };
-        });
-
-        res.json({ success: true, members: formattedMembers });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-})
 
 // Training routes
 router.get('/forms/training', isAuthenticated, (req, res) => {

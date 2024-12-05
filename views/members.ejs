@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USM Members</title>
+    <title>Members</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
@@ -20,7 +20,7 @@
             padding: 2rem;
         }
 
-        .members-container {
+        .forms-container {
             background: rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
             border-radius: 10px;
@@ -32,407 +32,213 @@
             border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
-        .nav-menu {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .nav-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.75rem 1.5rem;
-            border-radius: 5px;
+        .section-title {
             color: white;
-            text-decoration: none;
-            transition: all 0.3s ease;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
         }
 
-        .filters-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1rem;
-            border-radius: 10px;
-        }
-
-        .filter-input {
-            padding: 0.75rem;
-            border: none;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            color: black;
-        }
-
-        .members-grid {
-            display: grid;
-            gap: 1rem;
-        }
-
-        .member-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 1.5rem;
-            color: black;
-        }
-
-        .member-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .member-details div {
-            margin-bottom: 0.5rem;
-        }
-
-        .member-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .action-btn {
-            padding: 0.5rem 1rem;
+        .button {
+            display: inline-block;
+            background-color: #4299e1;
+            color: white;
+            padding: 10px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: #4299e1;
-            color: white;
+            margin-right: 10px;
         }
 
-        .modal {
+        .button:hover {
+            background-color: #3182ce;
+        }
+
+        .list, .lookup {
+            margin-top: 20px;
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
         }
 
-        .modal-content {
-            background: white;
-            margin: 10% auto;
-            padding: 2rem;
-            width: 90%;
-            max-width: 600px;
-            border-radius: 10px;
-            position: relative;
-        }
-
-        .close-btn {
-            position: absolute;
-            right: 1rem;
-            top: 1rem;
-            cursor: pointer;
+        .list.active, .lookup.active {
+            display: block;
         }
 
         .note {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
             padding: 1rem;
             margin-bottom: 1rem;
-            border-radius: 5px;
+            color: white;
         }
 
-        .note-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            color: rgba(0, 0, 0, 0.6);
+        .note p {
+            margin: 0.5rem 0;
         }
 
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
+        .add-note-form {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
             margin-top: 2rem;
+            color: white;
         }
 
-        .page-btn {
-            padding: 0.5rem 1rem;
-            border: none;
+        .add-note-form input, .add-note-form textarea, .add-note-form select, .add-note-form button {
+            display: block;
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 5px;
             background: rgba(255, 255, 255, 0.1);
             color: white;
-            cursor: pointer;
         }
 
-        .page-btn.active {
+        .add-note-form button {
             background: #4299e1;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-note-form button:hover {
+            background: #3182ce;
         }
     </style>
 </head>
 <body>
-    <div class="members-container">
-        <nav class="nav-menu">
-            <a href="/dashboard" class="nav-item">Dashboard</a>
-            <a href="/members" class="nav-item">Members</a>
-            <a href="/forms" class="nav-item">Forms</a>
-            <a href="/profile" class="nav-item">Profile</a>
-        </nav>
+    <div class="forms-container">
+        <h1 class="section-title">Members</h1>
+        <button class="button" id="show-list">Full Members List</button>
+        <button class="button" id="show-lookup">Member Lookup</button>
 
-        <div class="filters-container">
-            <input type="text" id="usernameFilter" placeholder="Search by username" class="filter-input">
-            <select id="rankFilter" class="filter-input">
-                <option value="">All Ranks</option>
-                <option value="asc">Rank (Lowest to Highest)</option>
-                <option value="desc">Rank (Highest to Lowest)</option>
-                <!-- Populated with actual ranks -->
-            </select>
-            <select id="specificRankFilter" class="filter-input">
-                <option value="">Select Specific Rank</option>
-                <!-- Populated with all ranks -->
-            </select>
-            <select id="placementFilter" class="filter-input">
-                <option value="">All Placements</option>
-                <!-- Populated with all placements -->
-            </select>
-            <select id="statusFilter" class="filter-input">
-                <option value="">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-            </select>
+        <!-- Full Members List -->
+        <div class="list" id="members-list">
+            <h2 class="section-title">Full Members List</h2>
+            <ul id="members-ul"></ul>
         </div>
 
-        <div class="members-grid">
-            <% members.forEach(member => { %>
-                <div class="member-card">
-                    <div class="member-info">
-                        <div class="member-details">
-                            <div><strong>Username:</strong> <%= member.username %></div>
-                            <div><strong>Rank:</strong> <%= member.highestRole %></div>
-                            <div><strong>Placement:</strong> <%= member.placement || 'Not Assigned' %></div>
-                            <div><strong>XP:</strong> <%= member.xp %></div>
-                        </div>
-                        <% if (isOfficer) { %>
-                            <div class="member-actions">
-                                <button class="action-btn" onclick="viewNotes('<%= member.username %>')">
-                                    Notes
-                                </button>
-                            </div>
-                        <% } %>
-                    </div>
-                </div>
-            <% }); %>
-        </div>
-
-        <div class="pagination">
-            <% for(let i = 1; i <= totalPages; i++) { %>
-                <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
-                        onclick="goToPage('<%= i %>')">
-                    <%= i %>
-                </button>
-            <% } %>
-        </div>
-    </div>
-
-    <!-- Notes Modal -->
-    <div id="notesModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2>User Notes</h2>
-            <div id="notesContainer"></div>
-            <div class="add-note-form">
-                <h3>Add New Note</h3>
-                <select id="noteType" class="filter-input">
-                    <option value="General">General</option>
-                    <option value="Warning">Warning</option>
-                    <option value="Training">Training</option>
-                    <option value="Recommendation">Recommendation</option>
-                </select>
-                <textarea id="noteContent" class="filter-input" placeholder="Enter note content"></textarea>
-                <button class="action-btn" onclick="addNote()">Add Note</button>
-            </div>
+        <!-- Member Lookup -->
+        <div class="lookup" id="member-lookup">
+            <h2 class="section-title">Member Lookup</h2>
+            <input type="text" id="lookup-input" placeholder="Enter username">
+            <button class="button" id="lookup-btn">Search</button>
+            <div id="profile-container"></div>
         </div>
     </div>
 
     <script>
-        let currentUsername = '';
+        const membersList = document.getElementById('members-list');
+        const memberLookup = document.getElementById('member-lookup');
+        const showListBtn = document.getElementById('show-list');
+        const showLookupBtn = document.getElementById('show-lookup');
+        const membersUl = document.getElementById('members-ul');
+        const lookupInput = document.getElementById('lookup-input');
+        const lookupBtn = document.getElementById('lookup-btn');
+        const profileContainer = document.getElementById('profile-container');
 
-        // Page Load Init
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadFilterOptions();
-            await loadMembers(); 
-            setupEventListeners();
+        showListBtn.addEventListener('click', async () => {
+            membersList.classList.add('active');
+            memberLookup.classList.remove('active');
+            membersUl.innerHTML = '';
+            try {
+                const res = await fetch('/members/list');
+                const data = await res.json();
+                if (data.success) {
+                    data.members.forEach(member => {
+                        const li = document.createElement('li');
+                        li.textContent = member.username;
+                        membersUl.appendChild(li);
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching members list:', err);
+            }
         });
 
-        // Load Filter Options
-        async function loadFilterOptions() {
-            const validRanks = [
-                'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
-                'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
-                'Master Sergeant', 'First Sergeant', 'Sergeant Major', 
-                'Command Sergeant Major', 'Sergeant Major of the Army',
-                'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-                'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
-                'Lieutenant General', 'General', 'General of the Army'
-            ];
+        showLookupBtn.addEventListener('click', () => {
+            membersList.classList.remove('active');
+            memberLookup.classList.add('active');
+            profileContainer.innerHTML = '';
+        });
 
-            const rankSelect = document.getElementById('specificRankFilter');
-            validRanks.forEach(rank => {
-                const option = document.createElement('option');
-                option.value = rank;
-                option.textContent = rank;
-                rankSelect.appendChild(option);
-            });
+        lookupBtn.addEventListener('click', async () => {
+            const username = lookupInput.value.trim();
+            if (!username) return;
 
-            // Load placements
-            const response = await fetch('/members/filter-options');
-            const data = await response.json();
-            const placementSelect = document.getElementById('placementFilter');
-            data.units.forEach(unit => {
-                const option = document.createElement('option');
-                option.value = unit;
-                option.textContent = unit;
-                placementSelect.appendChild(option);
-            });
-        }
-
-        function setupEventListeners() {
-            document.getElementById('usernameFilter').addEventListener('input', debounce(loadMembers, 300));
-            document.getElementById('specificRankFilter').addEventListener('change', loadMembers);
-            document.getElementById('placementFilter').addEventListener('change', loadMembers);
-        }
-
-        async function loadMembers() {
-            const filters = {
-                username: document.getElementById('usernameFilter').value,
-                specificRank: document.getElementById('specificRankFilter').value || '',
-                placement: document.getElementById('placementFilter').value || ''
-            };
-
-            const params = new URLSearchParams(filters);
-            const response = await fetch(`/members/filter?${params}`);
-            const data = await response.json();
-
-            if (data.success) {
-                updateMembersDisplay(data.members);
-            }
-        }
-
-        function updateMembersDisplay(members) {
-            const grid = document.querySelector('.members-grid');
-            grid.innerHTML = members.map(member => `
-                <div class="member-card">
-                    <div class="member-info">
-                        <div class="member-details">
-                            <div><strong>Username:</strong> ${member.username}</div>
-                            <div><strong>Rank:</strong> ${member.highestRole}</div>
-                            <div><strong>Placement:</strong> ${member.placement || 'Not Assigned'}</div>
-                            <div><strong>XP:</strong> ${member.xp}</div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Notes Functions
-        async function viewNotes(username) {
-            currentUsername = username;
-            const modal = document.getElementById('notesModal');
-            const container = document.getElementById('notesContainer');
-            
+            profileContainer.innerHTML = '<p>Loading...</p>';
             try {
-                const response = await fetch(`/members/notes/${username}`);
-                const data = await response.json();
-                
-                container.innerHTML = data.notes.map(note => `
-                    <div class="note">
-                        <div class="note-header">
-                            <span>${note.noteType}</span>
-                            <span>By ${note.addedBy} on ${new Date(note.dateAdded).toLocaleDateString()}</span>
-                        </div>
-                        <div class="note-content">${note.content}</div>
-                    </div>
-                `).join('');
-                
-                modal.style.display = 'block';
-            } catch (error) {
-                console.error('Error fetching notes:', error);
-            }
-        }
-
-        async function addNote() {
-            const type = document.getElementById('noteType').value;
-            const content = document.getElementById('noteContent').value;
-            
-            try {
-                const response = await fetch('/members/notes/add', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: currentUsername,
-                        noteType: type,
-                        content: content
-                    })
-                });
-                
-                if (response.ok) {
-                    document.getElementById('noteContent').value = '';
-                    viewNotes(currentUsername);
-                }
-            } catch (error) {
-                console.error('Error adding note:', error);
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('notesModal').style.display = 'none';
-        }
-
-        // Filter Functions
-        async function applyFilters() {
-            const filters = {
-                username: document.getElementById('usernameFilter').value,
-                rank: document.getElementById('rankFilter').value,
-                specificRank: document.getElementById('specificRankFilter').value || '', // Handle empty
-                placement: document.getElementById('placementFilter').value || '', // Handle empty
-                status: document.getElementById('statusFilter').value || '' // Handle empty
-            };
-
-            console.log('Applying filters:', filters);
-
-            try {
-                const params = new URLSearchParams(filters);
-                const response = await fetch(`/members/filter?${params}`);
-                const data = await response.json();
-
+                const res = await fetch(`/members/lookup/${username}`);
+                const data = await res.json();
                 if (data.success) {
-                    updateMembersDisplay(data.members);
+                    const profile = data.profile;
+                    profileContainer.innerHTML = `
+                        <h3>${profile.user.username}</h3>
+                        <p>Rank: ${profile.currentRank}</p>
+                        <p>XP: ${profile.user.xp}</p>
+                        <p>Placement: ${profile.placement}</p>
+                        <h4>Notes</h4>
+                        ${
+                            profile.notes.length > 0
+                                ? profile.notes
+                                    .map(
+                                        (note) => `
+                                <div class="note">
+                                    <p><strong>Type:</strong> ${note.noteType}</p>
+                                    <p><strong>Content:</strong> ${note.content}</p>
+                                    <p><small>Added By: ${note.addedBy}</small></p>
+                                    <p><small>Date: ${new Date(note.dateAdded).toLocaleString()}</small></p>
+                                </div>
+                            `
+                                    )
+                                    .join('')
+                                : '<p>No notes available.</p>'
+                        }
+                        ${
+                            profile.isOfficer
+                                ? `
+                                <div class="add-note-form">
+                                    <h4>Add a Note</h4>
+                                    <select id="noteType">
+                                        <option value="Info">Info</option>
+                                        <option value="Warning">Warning</option>
+                                    </select>
+                                    <textarea id="noteContent" placeholder="Enter note content"></textarea>
+                                    <button id="addNoteBtn">Add Note</button>
+                                </div>
+                            `
+                                : ''
+                        }
+                    `;
 
-                    // Check if no users are returned and display a message
-                    if (data.members.length === 0) {
-                        const grid = document.querySelector('.members-grid');
-                        grid.innerHTML = '<p>No users found for the selected filter.</p>';
+                    if (profile.isOfficer) {
+                        document.getElementById('addNoteBtn').addEventListener('click', async () => {
+                            const noteType = document.getElementById('noteType').value;
+                            const content = document.getElementById('noteContent').value;
+                            try {
+                                const res = await fetch('/members/notes/add', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ username, noteType, content }),
+                                });
+                                const result = await res.json();
+                                if (result.success) {
+                                    alert('Note added successfully!');
+                                } else {
+                                    alert('Failed to add note: ' + result.message);
+                                }
+                            } catch (err) {
+                                console.error('Error adding note:', err);
+                            }
+                        });
                     }
                 } else {
-                    console.error('Filter error:', data.error);
+                    profileContainer.innerHTML = `<p>${data.message}</p>`;
                 }
-            } catch (error) {
-                console.error('Error fetching filtered members:', error);
+            } catch (err) {
+                console.error('Error fetching profile:', err);
+                profileContainer.innerHTML = '<p>Error fetching profile.</p>';
             }
-        }
-
-        // Utility Functions
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        function goToPage(page) {
-            window.location.href = `/members?page=${page}`;
-        }
+        });
     </script>
 </body>
 </html>
