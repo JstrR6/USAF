@@ -32,47 +32,6 @@
             border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
-        .nav-menu {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .nav-item {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.75rem 1.5rem;
-            border-radius: 5px;
-            color: white;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .nav-item:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 10px;
-            color: white;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 600;
-            margin: 0.5rem 0;
-        }
-
         .filters-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -87,26 +46,21 @@
             padding: 0.75rem;
             border: none;
             border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.31);
             color: black;
         }
 
-        .filter-input::placeholder {
+        .filter-input option {
+            background: #541170;
             color: black;
-            opacity: 0.7;
-        }
-
-        .filter-input:focus {
-            outline: none;
-            background: rgba(255, 255, 255, 0.2);
         }
 
         .activity-card {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             padding: 1.5rem;
-            margin-bottom: 1rem;
             color: black;
+            margin-bottom: 1rem;
         }
 
         .activity-row {
@@ -121,87 +75,24 @@
             padding: 0.25rem 0.75rem;
             border-radius: 15px;
             font-size: 0.875rem;
-            color: white;
         }
-
-        .type-Training { background: #4299e1; }
-        .type-Promotion { background: #48bb78; }
-        .type-Award { background: #ed8936; }
-        .type-Placement { background: #9f7aea; }
 
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 15px;
             font-size: 0.875rem;
+        }
+
+        .no-activities {
+            text-align: center;
             color: white;
-        }
-
-        .status-approved { background: #48bb78; }
-        .status-pending { background: #ed8936; }
-        .status-rejected { background: #e53e3e; }
-        .status-processing { background: #4299e1; }
-
-        .export-btn {
-            background: #48bb78;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            margin-bottom: 1rem;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
-        }
-
-        .page-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            cursor: pointer;
-        }
-
-        .page-btn.active {
-            background: #4299e1;
+            margin: 2rem 0;
         }
     </style>
 </head>
 <body>
     <div class="audit-container">
-        <nav class="nav-menu">
-            <a href="/dashboard" class="nav-item">Dashboard</a>
-            <a href="/members" class="nav-item">Members</a>
-            <a href="/forms" class="nav-item">Forms</a>
-            <a href="/profile" class="nav-item">Profile</a>
-        </nav>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div>Total Activities</div>
-                <div class="stat-number"><%= stats.total %></div>
-            </div>
-            <div class="stat-card">
-                <div>Trainings</div>
-                <div class="stat-number"><%= stats.byType.Training %></div>
-            </div>
-            <div class="stat-card">
-                <div>Promotions</div>
-                <div class="stat-number"><%= stats.byType.Promotion %></div>
-            </div>
-            <div class="stat-card">
-                <div>Awards</div>
-                <div class="stat-number"><%= stats.byType.Award %></div>
-            </div>
-        </div>
+        <h2>Audit Log</h2>
 
         <div class="filters-container">
             <input type="text" id="searchInput" placeholder="Search username/details..." class="filter-input">
@@ -211,142 +102,65 @@
                 <option value="Promotion">Promotion</option>
                 <option value="Award">Award</option>
                 <option value="Placement">Placement</option>
-                <option value="Note">Notes</option> <!-- Added Notes as a type -->
+                <option value="Note">Notes</option>
             </select>
             <select id="statusFilter" class="filter-input">
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
                 <option value="rejected">Rejected</option>
             </select>
-            <select id="noteTypeFilter" class="filter-input" style="display: none;"> <!-- Note-specific filter -->
-                <option value="all">All Notes</option>
-                <option value="General">General</option>
-                <option value="Warning">Warnings</option>
-                <option value="Training">Trainings</option>
-                <option value="Recommendation">Recommendations</option>
+            <select id="sortFilter" class="filter-input">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
             </select>
-            <input type="date" id="startDate" class="filter-input">
-            <input type="date" id="endDate" class="filter-input">
         </div>
-
-        <a href="/forms/auditlog/export" class="export-btn">Export to CSV</a>
 
         <div class="activities-list">
-            <% if (activities && activities.length > 0) { %>
-                <% activities.forEach(activity => { %>
-                    <div class="activity-card">
-                        <div class="activity-row">
-                            <strong>Type:</strong>
-                            <span class="type-badge type-<%= activity.type %>">
-                                <%= activity.type %>
-                            </span>
-                        </div>
-                        <div class="activity-row">
-                            <strong>Username:</strong>
-                            <span><%= activity.username %></span>
-                        </div>
-                        <div class="activity-row">
-                            <strong>Performed By:</strong>
-                            <span><%= activity.performedBy %></span>
-                        </div>
-                        <div class="activity-row">
-                            <strong>Details:</strong>
-                            <span><%= activity.details %></span>
-                        </div>
-                        <div class="activity-row">
-                            <strong>Date:</strong>
-                            <span><%= new Date(activity.date).toLocaleString() %></span>
-                        </div>
-                        <div class="activity-row">
-                            <strong>Status:</strong>
-                            <span class="status-badge status-<%= activity.status.toLowerCase() %>">
-                                <%= activity.status %>
-                            </span>
-                        </div>
-                        <% if (activity.approvedBy) { %>
-                            <div class="activity-row">
-                                <strong>Approved By:</strong>
-                                <span><%= activity.approvedBy %> on <%= new Date(activity.dateApproved).toLocaleString() %></span>
-                            </div>
-                        <% } %>
-                    </div>
-                <% }); %>
-            <% } else { %>
-                <div class="no-activities">
-                    <h3>No activities found</h3>
-                </div>
-            <% } %>
+            <!-- Activities will be dynamically populated here -->
         </div>
-
-        <% if (totalPages > 1) { %>
-            <div class="pagination">
-                <% for(let i = 1; i <= totalPages; i++) { %>
-                    <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
-                            onclick="window.location.href='/forms/auditlog?page=<%= i %>'">
-                        <%= i %>
-                    </button>
-                <% } %>
-            </div>
-        <% } %>
     </div>
 
     <script>
-        // Display the note type filter only when "Notes" is selected
-        document.getElementById('typeFilter').addEventListener('change', () => {
-            const noteTypeFilter = document.getElementById('noteTypeFilter');
-            if (document.getElementById('typeFilter').value === 'Note') {
-                noteTypeFilter.style.display = 'block';
-            } else {
-                noteTypeFilter.style.display = 'none';
-            }
-        });
-    
+        document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
+        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('sortFilter').addEventListener('change', applyFilters);
+
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), wait);
+            };
+        }
+
         async function applyFilters() {
             const search = document.getElementById('searchInput').value;
             const type = document.getElementById('typeFilter').value;
             const status = document.getElementById('statusFilter').value;
-            const noteType = document.getElementById('noteTypeFilter').value; // Get selected note type
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-
-            const payload = {
-                search,
-                type,
-                status,
-                noteType: type === 'Note' ? noteType : undefined, // Only include noteType if "Note" is selected
-                startDate,
-                endDate
-            };
-
-            console.log('Filter payload:', payload); // Log payload for debugging
+            const sort = document.getElementById('sortFilter').value;
 
             try {
                 const response = await fetch('/forms/auditlog/filter', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ search, type, status, sort })
                 });
 
                 const data = await response.json();
                 if (data.success) {
-                    console.log('Filtered activities:', data.activities); // Log the filtered activities for debugging
                     updateActivitiesDisplay(data.activities);
-                } else {
-                    console.error('Filtering error:', data.error);
                 }
             } catch (error) {
                 console.error('Error applying filters:', error);
             }
         }
-    
+
         function updateActivitiesDisplay(activities) {
             const container = document.querySelector('.activities-list');
-
             if (activities.length === 0) {
-                container.innerHTML = '<div class="no-activities"><h3>No activities found</h3></div>';
+                container.innerHTML = '<div class="no-activities">No activities found.</div>';
                 return;
             }
 
@@ -354,48 +168,16 @@
                 <div class="activity-card">
                     <div class="activity-row">
                         <strong>Type:</strong>
-                        <span class="type-badge type-${activity.type}">
-                            ${activity.type}
-                        </span>
+                        <span class="type-badge">${activity.type}</span>
                     </div>
                     <div class="activity-row">
                         <strong>Username:</strong>
                         <span>${activity.username}</span>
                     </div>
                     <div class="activity-row">
-                        <strong>Performed By:</strong>
-                        <span>${activity.performedBy}</span>
-                    </div>
-                    <div class="activity-row">
-                        <strong>Details:</strong>
-                        <span>${activity.details}</span>
-                    </div>
-                    <div class="activity-row">
                         <strong>Date:</strong>
                         <span>${new Date(activity.date).toLocaleString()}</span>
                     </div>
-                    <div class="activity-row">
-                        <strong>Status:</strong>
-                        <span class="status-badge status-${activity.status.toLowerCase()}">
-                            ${activity.status}
-                        </span>
-                    </div>
-                    ${activity.type === 'Note' ? `
-                        <div class="activity-row">
-                            <strong>Note Type:</strong>
-                            <span>${activity.status}</span>
-                        </div>
-                        <div class="activity-row">
-                            <strong>Note Content:</strong>
-                            <span>${activity.details}</span>
-                        </div>
-                    ` : ''}
-                    ${activity.approvedBy ? `
-                        <div class="activity-row">
-                            <strong>Approved By:</strong>
-                            <span>${activity.approvedBy} on ${new Date(activity.dateApproved).toLocaleString()}</span>
-                        </div>
-                    ` : ''}
                 </div>
             `).join('');
         }

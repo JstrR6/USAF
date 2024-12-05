@@ -1310,20 +1310,18 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
 
 // Filter route
 router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, res) => {
+    const { search, type, status, sort } = req.body;
+
     try {
-        const { search, type, status, startDate, endDate, noteType } = req.body;
-
-        console.log('Filter received:', req.body); // Log incoming filters
-
         const [trainings, promotions, awards, placements, notes] = await Promise.all([
             Training.find(),
             Promotion.find(),
             Award.find(),
             Placement.find(),
-            UserNote.find(noteType && noteType !== 'all' ? { type: noteType } : {})
+            UserNote.find()
         ]);
 
-        let allActivities = [
+        let activities = [
             ...trainings.map(t => ({
                 type: 'Training',
                 username: t.trainees.join(', '),
@@ -1360,7 +1358,7 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
             })),
             ...notes.map(n => ({
                 type: 'Note',
-                username: n.userId, // Replace with a user lookup if necessary
+                username: n.userId,
                 performedBy: n.createdBy,
                 details: n.content,
                 status: n.type,
@@ -1370,35 +1368,28 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
 
         // Apply filters
         if (search) {
-            const searchRegex = new RegExp(search, 'i');
-            allActivities = allActivities.filter(a =>
-                searchRegex.test(a.username) ||
-                searchRegex.test(a.performedBy) ||
-                searchRegex.test(a.details)
-            );
+            const regex = new RegExp(search, 'i');
+            activities = activities.filter(a => regex.test(a.username) || regex.test(a.details));
         }
 
         if (type !== 'all') {
-            allActivities = allActivities.filter(a => a.type === type);
+            activities = activities.filter(a => a.type === type);
         }
 
         if (status !== 'all') {
-            allActivities = allActivities.filter(a => a.status === status);
+            activities = activities.filter(a => a.status.toLowerCase() === status.toLowerCase());
         }
 
-        if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            allActivities = allActivities.filter(a =>
-                a.date >= start && a.date <= end
-            );
+        if (sort === 'newest') {
+            activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+        } else if (sort === 'oldest') {
+            activities.sort((a, b) => new Date(a.date) - new Date(b.date));
         }
 
-        console.log('Filtered activities:', allActivities); // Log the filtered results
-        res.json({ success: true, activities: allActivities });
+        res.json({ success: true, activities });
     } catch (error) {
-        console.error('Error filtering logs:', error);
-        res.status(500).json({ success: false, error: 'Error filtering logs' });
+        console.error('Error filtering audit log:', error);
+        res.status(500).json({ success: false, error: 'Error filtering audit log' });
     }
 });
 
