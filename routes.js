@@ -230,34 +230,30 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        // Ranks to exclude
-        const excludedRanks = [
-            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        // List of valid ranks to display
+        const validRanks = [
+            'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
+            'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
+            'Master Sergeant', 'First Sergeant', 'Sergeant Major', 
+            'Command Sergeant Major', 'Sergeant Major of the Army',
+            'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+            'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+            'Lieutenant General', 'General', 'General of the Army'
         ];
 
-        // Fetch total member count excluding specific ranks
+        // Fetch total member count with valid ranks
         const totalMembers = await User.countDocuments({
-            'roles.name': { $nin: excludedRanks }
+            'roles.name': { $in: validRanks }
         });
 
-        // Fetch all members with pagination
-        const users = await User.find({ 'roles.name': { $nin: excludedRanks } })
+        // Fetch all members with pagination and only valid ranks
+        const users = await User.find({ 'roles.name': { $in: validRanks } })
             .skip(skip)
             .limit(limit)
             .populate({
                 path: 'roles',
                 select: 'name'
             });
-
-        // Filter valid roles
-        const formatValidRole = (roles) => {
-            if (!roles || roles.length === 0) return 'No role assigned';
-            return roles
-                .map(role => role.name)
-                .find(name => !excludedRanks.includes(name)) || 'No role assigned';
-        };
 
         // Fetch the latest placements for all members
         const placements = await Placement.aggregate([
@@ -275,7 +271,9 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
         // Format members with placement data
         const formattedMembers = users.map(user => ({
             username: user.username,
-            highestRole: formatValidRole(user.roles),
+            highestRole: user.roles
+                ?.map(role => role.name)
+                ?.find(role => validRanks.includes(role)) || 'No role assigned',
             xp: user.xp || 0,
             placement: placementMap[user.username] || 'Not Assigned'
         }));
