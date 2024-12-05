@@ -328,6 +328,10 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
             select: 'name'
         });
 
+        if (users.length === 0) {
+            return res.json({ success: true, members: [] });
+        }
+
         // Fetch latest placements for all users
         const placements = await Placement.aggregate([
             { $match: { status: 'approved' } },
@@ -388,34 +392,17 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
 router.get('/members/filter-options', isAuthenticated, async (req, res) => {
     try {
         const units = await Unit.find().distinct('name');
-        const ranks = [
-            'Citizen',
-            'Private',
-            'Private First Class',
-            'Specialist',
-            'Corporal',
-            'Sergeant',
-            'Staff Sergeant',
-            'Sergeant First Class',
-            'Master Sergeant',
-            'First Sergeant',
-            'Sergeant Major',
-            'Command Sergeant Major',
-            'Sergeant Major of the Army',
-            'Second Lieutenant',
-            'First Lieutenant',
-            'Captain',
-            'Major',
-            'Lieutenant Colonel',
-            'Colonel',
-            'Brigadier General',
-            'Major General',
-            'Lieutenant General',
-            'General',
-            'General of the Army'
-        ];
+        const ranks = await User.distinct('roles.name');
 
-        res.json({ success: true, units, ranks });
+        // Filter out excluded ranks
+        const excludedRanks = [
+            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+        ];
+        const filteredRanks = ranks.filter(rank => !excludedRanks.includes(rank));
+
+        res.json({ success: true, units, ranks: filteredRanks });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

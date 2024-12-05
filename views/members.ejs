@@ -368,7 +368,7 @@
                 status: document.getElementById('statusFilter').value
             };
 
-            console.log('Applying filters:', filters); // Debugging
+            console.log('Applying filters:', filters);
 
             try {
                 const params = new URLSearchParams(filters);
@@ -377,6 +377,12 @@
                 
                 if (data.success) {
                     updateMembersDisplay(data.members);
+                    
+                    // Check if no users are returned and display a message
+                    if (data.members.length === 0) {
+                        const grid = document.querySelector('.members-grid');
+                        grid.innerHTML = '<p>No users found for the selected filter.</p>';
+                    }
                 } else {
                     console.error('Filter error:', data.error);
                 }
