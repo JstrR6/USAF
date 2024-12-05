@@ -256,6 +256,7 @@
         // Page Load Init
         document.addEventListener('DOMContentLoaded', async () => {
             await loadFilterOptions();
+            applyFilters(); 
             setupEventListeners();
         });
 
@@ -363,9 +364,9 @@
             const filters = {
                 username: document.getElementById('usernameFilter').value,
                 rank: document.getElementById('rankFilter').value,
-                specificRank: document.getElementById('specificRankFilter').value,
-                placement: document.getElementById('placementFilter').value,
-                status: document.getElementById('statusFilter').value
+                specificRank: document.getElementById('specificRankFilter').value || '', // Handle empty
+                placement: document.getElementById('placementFilter').value || '', // Handle empty
+                status: document.getElementById('statusFilter').value || '' // Handle empty
             };
 
             console.log('Applying filters:', filters);
@@ -374,10 +375,10 @@
                 const params = new URLSearchParams(filters);
                 const response = await fetch(`/members/filter?${params}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     updateMembersDisplay(data.members);
-                    
+
                     // Check if no users are returned and display a message
                     if (data.members.length === 0) {
                         const grid = document.querySelector('.members-grid');
