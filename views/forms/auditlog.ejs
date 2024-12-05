@@ -114,6 +114,23 @@
             border-radius: 15px;
             font-size: 0.875rem;
             color: white;
+            text-align: center;
+        }
+
+        .type-Training {
+            background-color: #4299e1; 
+        }
+        .type-Promotion {
+            background-color: #48bb78; 
+        }
+        .type-Award {
+            background-color: #ed8936; 
+        }
+        .type-Placement {
+            background-color: #9f7aea; 
+        }
+        .type-Note {
+            background-color: #e53e3e; 
         }
 
         .status-badge {
@@ -227,7 +244,7 @@
                     <div class="activity-card">
                         <div class="activity-row">
                             <strong>Type:</strong>
-                            <span class="type-badge"><%= activity.type %></span>
+                            <span class="type-badge type-<%= activity.type %>"><%= activity.type %></span>
                         </div>
                         <div class="activity-row">
                             <strong>Username:</strong>

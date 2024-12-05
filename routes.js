@@ -1358,11 +1358,11 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
             })),
             ...notes.map(n => ({
                 type: 'Note',
-                username: n.userId,
-                performedBy: n.createdBy,
-                details: n.content,
-                status: n.type,
-                date: n.date
+                username: n.username, // Correctly use the `username` field
+                performedBy: n.addedBy, // Use `addedBy` for the performedBy field
+                details: n.content, // Use `content` for the details
+                status: n.noteType, // Use `noteType` for the status
+                date: n.dateAdded // Use `dateAdded` for the date
             }))
         ];
 
