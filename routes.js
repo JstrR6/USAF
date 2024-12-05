@@ -1289,7 +1289,10 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
                 performedBy: n.addedBy,
                 details: n.content,
                 status: n.noteType,
-                date: n.dateAdded
+                date: n.dateAdded,
+                noteType: n.noteType,  // Add this for consistency
+                content: n.content,    // Add this for consistency
+                addedBy: n.addedBy    // Add this for consistency
             }))
         ].sort((a, b) => new Date(b.date) - new Date(a.date));
 

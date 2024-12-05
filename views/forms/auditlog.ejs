@@ -282,7 +282,7 @@
                     <div class="activity-card">
                         <div class="activity-row">
                             <strong>Type:</strong>
-                            <span class="type-badge type-<%= activity.type === 'Note' ? activity.status : activity.type %>">
+                            <span class="type-badge type-<%= activity.type %>">
                                 <%= activity.type %>
                             </span>
                         </div>
@@ -440,17 +440,22 @@
                 return;
             }
 
-            container.innerHTML = activities.map(activity => `
-                <div class="activity-card">
-                    <div class="activity-row">
-                        <strong>Type:</strong>
-                        <span class="type-badge type-${activity.type}">${activity.type}</span>
-                    </div>
-                    <div class="activity-row">
-                        <strong>Username:</strong>
-                        <span>${activity.username}</span>
-                    </div>
-                    ${activity.type === 'Note' ? `
+            container.innerHTML = activities.map(activity => {
+                let html = `
+                    <div class="activity-card">
+                        <div class="activity-row">
+                            <strong>Type:</strong>
+                            <span class="type-badge type-${activity.type === 'Note' ? activity.status : activity.type}">
+                                ${activity.type}
+                            </span>
+                        </div>`;
+
+                if (activity.type === 'Note') {
+                    html += `
+                        <div class="activity-row">
+                            <strong>Username:</strong>
+                            <span>${activity.username}</span>
+                        </div>
                         <div class="activity-row">
                             <strong>Note Type:</strong>
                             <span>${activity.status}</span>
@@ -459,19 +464,123 @@
                             <strong>Content:</strong>
                             <span>${activity.details}</span>
                         </div>
-                    ` : ''}
-                    <div class="activity-row">
-                        <strong>Date:</strong>
-                        <span>${new Date(activity.date).toLocaleString()}</span>
-                    </div>
-                    ${activity.approvedBy ? `
                         <div class="activity-row">
-                            <strong>Approved By:</strong>
-                            <span>${activity.approvedBy} on ${new Date(activity.dateApproved).toLocaleString()}</span>
+                            <strong>Added By:</strong>
+                            <span>${activity.performedBy}</span>
                         </div>
-                    ` : ''}
-                </div>
-            `).join('');
+                        <div class="activity-row">
+                            <strong>Date:</strong>
+                            <span>${new Date(activity.date).toLocaleString()}</span>
+                        </div>`;
+                } else if (activity.type === 'Training') {
+                    html += `
+                        <div class="activity-row">
+                            <strong>Trainer:</strong>
+                            <span>${activity.trainer}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Trainee(s):</strong>
+                            <span>${activity.trainees}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>XP Amount:</strong>
+                            <span>${activity.xpAmount}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Date:</strong>
+                            <span>${new Date(activity.date).toLocaleString()}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Status:</strong>
+                            <span class="status-badge status-${activity.status.toLowerCase()}">
+                                ${activity.status}
+                            </span>
+                        </div>`;
+                } else if (activity.type === 'Promotion') {
+                    html += `
+                        <div class="activity-row">
+                            <strong>Username:</strong>
+                            <span>${activity.username}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Current Rank:</strong>
+                            <span>${activity.currentRank}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Promotion Rank:</strong>
+                            <span>${activity.promotionRank}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Submitted By:</strong>
+                            <span>${activity.submittedBy}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Date:</strong>
+                            <span>${new Date(activity.date).toLocaleString()}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Status:</strong>
+                            <span class="status-badge status-${activity.status.toLowerCase()}">
+                                ${activity.status}
+                            </span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Reason:</strong>
+                            <span>${activity.reason}</span>
+                        </div>`;
+                } else if (activity.type === 'Award') {
+                    html += `
+                        <div class="activity-row">
+                            <strong>Username:</strong>
+                            <span>${activity.username}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Award:</strong>
+                            <span>${activity.details}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Submitted By:</strong>
+                            <span>${activity.submittedBy}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Date:</strong>
+                            <span>${new Date(activity.date).toLocaleString()}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Reason:</strong>
+                            <span>${activity.reason}</span>
+                        </div>`;
+                } else if (activity.type === 'Placement') {
+                    html += `
+                        <div class="activity-row">
+                            <strong>Username:</strong>
+                            <span>${activity.username}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Placement:</strong>
+                            <span>${activity.details}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Placement Rank:</strong>
+                            <span>${activity.placementRank}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Date:</strong>
+                            <span>${new Date(activity.date).toLocaleString()}</span>
+                        </div>`;
+                }
+
+                if (activity.approvedBy && activity.type !== 'Note') {
+                    html += `
+                        <div class="activity-row">
+                            <strong>Handled By:</strong>
+                            <span>${activity.approvedBy} on ${new Date(activity.dateApproved).toLocaleString()}</span>
+                        </div>`;
+                }
+
+                html += `</div>`;
+                return html;
+            }).join('');
         }
 
         // Add event listeners for filters
