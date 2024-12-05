@@ -1229,15 +1229,14 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res) => {
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        // Get data from all schemas
-        const [trainings, promotions, awards, placements] = await Promise.all([
+        const [trainings, promotions, awards, placements, notes] = await Promise.all([
             Training.find().sort({ dateSubmitted: -1 }),
             Promotion.find().sort({ dateSubmitted: -1 }),
             Award.find().sort({ dateSubmitted: -1 }),
-            Placement.find().sort({ dateSubmitted: -1 })
+            Placement.find().sort({ dateSubmitted: -1 }),
+            UserNote.find().sort({ date: -1 })
         ]);
 
-        // Combine and format all activities
         const allActivities = [
             ...trainings.map(t => ({
                 type: 'Training',
@@ -1272,60 +1271,27 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res) => {
                 details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
                 status: p.status,
                 date: p.dateSubmitted
+            })),
+            ...notes.map(n => ({
+                type: 'Note',
+                username: n.userId, // Replace with a user lookup if necessary
+                performedBy: n.createdBy,
+                details: n.content,
+                status: n.type,
+                date: n.date
             }))
         ].sort((a, b) => b.date - a.date);
 
-        // Calculate statistics
-        const stats = {
-            total: allActivities.length,
-            byType: {
-                Training: trainings.length,
-                Promotion: promotions.length,
-                Award: awards.length,
-                Placement: placements.length
-            },
-            byStatus: {
-                Pending: allActivities.filter(a => a.status === 'pending').length,
-                Approved: allActivities.filter(a => a.status === 'approved').length,
-                Rejected: allActivities.filter(a => a.status === 'rejected').length
-            },
-            // Daily activity for the last 7 days
-            dailyActivity: [...Array(7)].map((_, i) => {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                date.setHours(0, 0, 0, 0);
-                const nextDay = new Date(date);
-                nextDay.setDate(nextDay.getDate() + 1);
-                
-                return {
-                    date: date.toISOString().split('T')[0],
-                    count: allActivities.filter(a => 
-                        a.date >= date && a.date < nextDay
-                    ).length
-                };
-            }).reverse(),
-            // Top users
-            topUsers: Object.entries(
-                allActivities.reduce((acc, curr) => {
-                    acc[curr.username] = (acc[curr.username] || 0) + 1;
-                    return acc;
-                }, {})
-            ).sort((a, b) => b[1] - a[1]).slice(0, 5)
-        };
-
-        // Paginate activities
         const paginatedActivities = allActivities.slice(skip, skip + limit);
         const totalPages = Math.ceil(allActivities.length / limit);
 
         res.render('forms/auditlog', {
             title: 'Audit Log',
             activities: paginatedActivities,
-            stats,
             currentPage: page,
             totalPages,
             totalActivities: allActivities.length
         });
-
     } catch (error) {
         console.error('Audit log error:', error);
         next(error);
@@ -1335,17 +1301,16 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res) => {
 // Filter route
 router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, res) => {
     try {
-        const { search, type, status, startDate, endDate } = req.body;
-        
-        // Get fresh data
-        const [trainings, promotions, awards, placements] = await Promise.all([
+        const { search, type, status, startDate, endDate, noteType } = req.body;
+
+        const [trainings, promotions, awards, placements, notes] = await Promise.all([
             Training.find(),
             Promotion.find(),
             Award.find(),
-            Placement.find()
+            Placement.find(),
+            UserNote.find(noteType && noteType !== 'all' ? { type: noteType } : {})
         ]);
 
-        // Combine all activities (same as above)
         let allActivities = [
             ...trainings.map(t => ({
                 type: 'Training',
@@ -1380,14 +1345,22 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
                 details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
                 status: p.status,
                 date: p.dateSubmitted
+            })),
+            ...notes.map(n => ({
+                type: 'Note',
+                username: n.userId, // Replace with a user lookup if necessary
+                performedBy: n.createdBy,
+                details: n.content,
+                status: n.type,
+                date: n.date
             }))
-        ].sort((a, b) => b.date - a.date);
+        ];
 
         // Apply filters
         if (search) {
             const searchRegex = new RegExp(search, 'i');
-            allActivities = allActivities.filter(a => 
-                searchRegex.test(a.username) || 
+            allActivities = allActivities.filter(a =>
+                searchRegex.test(a.username) ||
                 searchRegex.test(a.performedBy) ||
                 searchRegex.test(a.details)
             );
@@ -1404,7 +1377,7 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
         if (startDate && endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
-            allActivities = allActivities.filter(a => 
+            allActivities = allActivities.filter(a =>
                 a.date >= start && a.date <= end
             );
         }

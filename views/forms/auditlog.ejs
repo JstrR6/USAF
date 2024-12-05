@@ -211,12 +211,20 @@
                 <option value="Promotion">Promotion</option>
                 <option value="Award">Award</option>
                 <option value="Placement">Placement</option>
+                <option value="Note">Notes</option> <!-- Added Notes as a type -->
             </select>
             <select id="statusFilter" class="filter-input">
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
+            </select>
+            <select id="noteTypeFilter" class="filter-input" style="display: none;"> <!-- Note-specific filter -->
+                <option value="all">All Notes</option>
+                <option value="General">General</option>
+                <option value="Warning">Warnings</option>
+                <option value="Training">Trainings</option>
+                <option value="Recommendation">Recommendations</option>
             </select>
             <input type="date" id="startDate" class="filter-input">
             <input type="date" id="endDate" class="filter-input">
@@ -284,32 +292,24 @@
     </div>
 
     <script>
-        // Add event listeners for filters
-        document.getElementById('searchInput').addEventListener('input', debounce(applyFilters, 300));
-        document.getElementById('typeFilter').addEventListener('change', applyFilters);
-        document.getElementById('statusFilter').addEventListener('change', applyFilters);
-        document.getElementById('startDate').addEventListener('change', applyFilters);
-        document.getElementById('endDate').addEventListener('change', applyFilters);
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
+        // Display the note type filter only when "Notes" is selected
+        document.getElementById('typeFilter').addEventListener('change', () => {
+            const noteTypeFilter = document.getElementById('noteTypeFilter');
+            if (document.getElementById('typeFilter').value === 'Note') {
+                noteTypeFilter.style.display = 'block';
+            } else {
+                noteTypeFilter.style.display = 'none';
+            }
+        });
+    
         async function applyFilters() {
             const search = document.getElementById('searchInput').value;
             const type = document.getElementById('typeFilter').value;
             const status = document.getElementById('statusFilter').value;
+            const noteType = document.getElementById('noteTypeFilter').value; // Get selected note type
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-
+    
             try {
                 const response = await fetch('/forms/auditlog/filter', {
                     method: 'POST',
@@ -320,11 +320,12 @@
                         search,
                         type,
                         status,
+                        noteType,
                         startDate,
                         endDate
                     })
                 });
-
+    
                 const data = await response.json();
                 if (data.success) {
                     updateActivitiesDisplay(data.activities);
@@ -333,7 +334,7 @@
                 console.error('Error applying filters:', error);
             }
         }
-
+    
         function updateActivitiesDisplay(activities) {
             const container = document.querySelector('.activities-list');
             
@@ -341,7 +342,7 @@
                 container.innerHTML = '<div class="no-activities"><h3>No activities found</h3></div>';
                 return;
             }
-
+    
             container.innerHTML = activities.map(activity => `
                 <div class="activity-card">
                     <div class="activity-row">
@@ -372,6 +373,16 @@
                             ${activity.status}
                         </span>
                     </div>
+                    ${activity.type === 'Note' ? `
+                        <div class="activity-row">
+                            <strong>Note Type:</strong>
+                            <span>${activity.status}</span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Note Content:</strong>
+                            <span>${activity.details}</span>
+                        </div>
+                    ` : ''}
                     ${activity.approvedBy ? `
                         <div class="activity-row">
                             <strong>Approved By:</strong>
