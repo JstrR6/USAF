@@ -15,21 +15,21 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-            color: #fff;
+            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
             min-height: 100vh;
             padding: 2rem;
         }
 
-        .members-container {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
+        .container {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
             border-radius: 10px;
             padding: 2rem;
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
         .nav-menu {
@@ -39,117 +39,86 @@
         }
 
         .nav-item {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             padding: 0.75rem 1.5rem;
             border-radius: 5px;
-            color: #fff;
+            color: white;
             text-decoration: none;
             transition: all 0.3s ease;
-            font-weight: 600;
         }
 
         .nav-item:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
 
-        .section-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            text-align: center;
+        .search-container {
+            margin-bottom: 2rem;
         }
 
-        .button {
-            display: inline-block;
-            background-color: #4299e1;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-right: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .button:hover {
-            background-color: #3182ce;
-        }
-
-        .list, .lookup {
-            margin-top: 20px;
+        .profile-container {
+            display: none;
+            margin-top: 2rem;
         }
 
         .user-info {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 1rem;
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            color: #fff;
-            font-weight: 500;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .note {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 1rem;
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            color: #fff;
-            font-weight: 500;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .add-note-form {
+            margin-bottom: 1.5rem;
             background: rgba(255, 255, 255, 0.1);
             padding: 1rem;
-            border-radius: 10px;
-            margin-top: 2rem;
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .add-note-form input,
-        .add-note-form textarea,
-        .add-note-form button {
-            width: 100%;
-            margin-bottom: 1rem;
-            padding: 0.75rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
         }
 
-        .add-note-form button {
-            background: #4299e1;
+        .note-container {
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+        }
+
+        .note-container button {
+            margin-top: 1rem;
+        }
+
+        .form-container {
+            margin-top: 1.5rem;
+            display: none;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
             border: none;
+            color: black;
+        }
+
+        button {
+            background: #4299e1;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-weight: 600;
+            margin-top: 1rem;
         }
 
-        .add-note-form button:hover {
+        button:hover {
             background: #3182ce;
         }
 
-        .search-container input {
-            padding: 0.75rem;
-            width: 100%;
+        .note {
+            padding: 1rem;
             margin-bottom: 1rem;
-            border: none;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
         }
     </style>
 </head>
 <body>
-    <div class="members-container">
+    <div class="container">
         <nav class="nav-menu">
             <a href="/dashboard" class="nav-item">Dashboard</a>
             <a href="/members" class="nav-item">Members</a>
@@ -157,122 +126,120 @@
             <a href="/profile" class="nav-item">Profile</a>
         </nav>
 
-        <h1 class="section-title">Members</h1>
-        <button class="button" id="show-list">Full Members List</button>
-        <button class="button" id="show-lookup">Member Lookup</button>
-
-        <!-- Full Members List -->
-        <div class="list" id="members-list">
-            <h2 class="section-title">Full Members List</h2>
-            <ul id="members-ul"></ul>
+        <div class="search-container">
+            <input type="text" id="search-username" placeholder="Search by username" />
+            <button id="search-btn">Search</button>
         </div>
 
-        <!-- Member Lookup -->
-        <div class="lookup" id="member-lookup">
-            <h2 class="section-title">Member Lookup</h2>
-            <input type="text" id="lookup-input" placeholder="Enter username">
-            <button class="button" id="lookup-btn">Search</button>
-            <div id="officer-controls" style="display: none;">
-                <button class="button" id="add-note-btn">Add Note</button>
+        <div id="profile-container" class="profile-container">
+            <div class="user-info">
+                <h3 id="username-display"></h3>
+                <p><strong>Rank:</strong> <span id="rank-display"></span></p>
+                <p><strong>XP:</strong> <span id="xp-display"></span></p>
+                <p><strong>Placement:</strong> <span id="placement-display"></span></p>
             </div>
-        </div>
 
-        <!-- Add Note Form -->
-        <div class="add-note-form" id="add-note-form" style="display: none;">
-            <h3>Add Note</h3>
-            <textarea id="note-content" placeholder="Enter note content"></textarea>
-            <button class="button" id="submit-note-btn">Submit Note</button>
+            <div id="notes-section" class="note-container">
+                <h4>Notes</h4>
+                <div id="notes-list"></div>
+                <button id="add-note-btn" style="display: none;">Add Note</button>
+            </div>
+
+            <div id="note-form" class="form-container">
+                <textarea id="note-content" placeholder="Enter note content"></textarea>
+                <button id="submit-note-btn">Submit Note</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const membersList = document.getElementById('members-list');
-        const memberLookup = document.getElementById('member-lookup');
-        const showListBtn = document.getElementById('show-list');
-        const showLookupBtn = document.getElementById('show-lookup');
-        const membersUl = document.getElementById('members-ul');
-        const lookupInput = document.getElementById('lookup-input');
-        const lookupBtn = document.getElementById('lookup-btn');
-        const officerControls = document.getElementById('officer-controls');
-        const addNoteForm = document.getElementById('add-note-form');
+        const searchBtn = document.getElementById('search-btn');
+        const profileContainer = document.getElementById('profile-container');
+        const usernameDisplay = document.getElementById('username-display');
+        const rankDisplay = document.getElementById('rank-display');
+        const xpDisplay = document.getElementById('xp-display');
+        const placementDisplay = document.getElementById('placement-display');
+        const notesList = document.getElementById('notes-list');
+        const addNoteBtn = document.getElementById('add-note-btn');
+        const noteForm = document.getElementById('note-form');
         const submitNoteBtn = document.getElementById('submit-note-btn');
+        const noteContent = document.getElementById('note-content');
+        const searchUsername = document.getElementById('search-username');
 
-        // Fetch officer status from server
-        let isOfficer = false;
-        async function checkOfficerStatus() {
+        let currentUsername = null;
+
+        async function fetchProfile(username) {
             try {
-                const res = await fetch('/api/check-officer');
+                const res = await fetch(`/members/lookup/${username}`);
                 const data = await res.json();
-                isOfficer = data.isOfficer;
+
+                if (data.success) {
+                    const profile = data.profile;
+                    currentUsername = profile.user.username;
+
+                    usernameDisplay.textContent = profile.user.username;
+                    rankDisplay.textContent = profile.currentRank;
+                    xpDisplay.textContent = profile.user.xp || 0;
+                    placementDisplay.textContent = profile.placement || 'None';
+                    notesList.innerHTML = profile.notes
+                        .map(note => `
+                            <div class="note">
+                                <p><strong>Type:</strong> ${note.noteType}</p>
+                                <p><strong>Content:</strong> ${note.content}</p>
+                                <p><small>Added By: ${note.addedBy}</small></p>
+                                <p><small>Date: ${new Date(note.dateAdded).toLocaleString()}</small></p>
+                            </div>
+                        `)
+                        .join('');
+                    
+                    profileContainer.style.display = 'block';
+
+                    // Show Add Note button if user is an officer
+                    if (profile.isOfficer) {
+                        addNoteBtn.style.display = 'block';
+                    }
+                } else {
+                    alert(data.message || 'User not found.');
+                }
             } catch (err) {
-                console.error('Error checking officer status:', err);
+                console.error('Error fetching profile:', err);
             }
         }
 
-        checkOfficerStatus();
-
-        showListBtn.addEventListener('click', async () => {
-            membersList.style.display = 'block';
-            memberLookup.style.display = 'none';
-            membersUl.innerHTML = '';
-            try {
-                const res = await fetch('/members/list');
-                const data = await res.json();
-                if (data.success) {
-                    data.members.forEach(member => {
-                        const li = document.createElement('li');
-                        li.textContent = member.username;
-                        li.className = 'user-info';
-                        membersUl.appendChild(li);
-                    });
-                }
-            } catch (err) {
-                console.error('Error fetching members list:', err);
-            }
+        searchBtn.addEventListener('click', () => {
+            const username = searchUsername.value.trim();
+            if (username) fetchProfile(username);
         });
 
-        showLookupBtn.addEventListener('click', () => {
-            membersList.style.display = 'none';
-            memberLookup.style.display = 'block';
+        addNoteBtn.addEventListener('click', () => {
+            noteForm.style.display = 'block';
         });
 
-        lookupBtn.addEventListener('click', async () => {
-            const username = lookupInput.value.trim();
-            if (!username) return;
-
-            const url = `/members/lookup/${username}`;
-            window.open(url, '_blank');
-
-            if (isOfficer) {
-                officerControls.style.display = 'block';
-            }
-        });
-
-        // Show Add Note Form
-        document.getElementById('add-note-btn').addEventListener('click', () => {
-            addNoteForm.style.display = 'block';
-        });
-
-        // Submit Note
         submitNoteBtn.addEventListener('click', async () => {
-            const noteContent = document.getElementById('note-content').value.trim();
-            if (!noteContent) {
-                alert('Note content cannot be empty.');
+            const content = noteContent.value.trim();
+
+            if (!content || !currentUsername) {
+                alert('Note content is required.');
                 return;
             }
 
             try {
-                const res = await fetch('/api/add-note', {
+                const res = await fetch('/members/notes/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: lookupInput.value.trim(), note: noteContent }),
+                    body: JSON.stringify({
+                        username: currentUsername,
+                        noteType: 'General',
+                        content: content,
+                    }),
                 });
+
                 const data = await res.json();
                 if (data.success) {
                     alert('Note added successfully!');
-                    addNoteForm.style.display = 'none';
+                    fetchProfile(currentUsername); // Refresh profile
                 } else {
-                    alert('Failed to add note.');
+                    alert(data.message || 'Failed to add note.');
                 }
             } catch (err) {
                 console.error('Error adding note:', err);
