@@ -1223,18 +1223,18 @@ router.get('/forms/allpromotions/export', isAuthenticated, isOfficer, async (req
     }
 });
 
-router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res) => {
+router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        const [trainings, promotions, awards, placements, notes] = await Promise.all([
+        // Fetch activities (trainings, promotions, etc.)
+        const [trainings, promotions, awards, placements] = await Promise.all([
             Training.find().sort({ dateSubmitted: -1 }),
             Promotion.find().sort({ dateSubmitted: -1 }),
             Award.find().sort({ dateSubmitted: -1 }),
-            Placement.find().sort({ dateSubmitted: -1 }),
-            UserNote.find().sort({ date: -1 })
+            Placement.find().sort({ dateSubmitted: -1 })
         ]);
 
         const allActivities = [
@@ -1271,29 +1271,39 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res) => {
                 details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
                 status: p.status,
                 date: p.dateSubmitted
-            })),
-            ...notes.map(n => ({
-                type: 'Note',
-                username: n.userId, // Replace with a user lookup if necessary
-                performedBy: n.createdBy,
-                details: n.content,
-                status: n.type,
-                date: n.date
             }))
-        ].sort((a, b) => b.date - a.date);
+        ];
 
+        // Calculate statistics
+        const stats = {
+            total: allActivities.length,
+            byType: {
+                Training: trainings.length,
+                Promotion: promotions.length,
+                Award: awards.length,
+                Placement: placements.length
+            },
+            byStatus: {
+                Pending: allActivities.filter(a => a.status === 'Pending').length,
+                Approved: allActivities.filter(a => a.status === 'Approved').length,
+                Rejected: allActivities.filter(a => a.status === 'Rejected').length
+            }
+        };
+
+        // Paginate activities
         const paginatedActivities = allActivities.slice(skip, skip + limit);
         const totalPages = Math.ceil(allActivities.length / limit);
 
+        // Render the audit log page
         res.render('forms/auditlog', {
             title: 'Audit Log',
             activities: paginatedActivities,
+            stats: stats || { total: 0, byType: {}, byStatus: {} }, // Default empty stats
             currentPage: page,
-            totalPages,
-            totalActivities: allActivities.length
+            totalPages
         });
     } catch (error) {
-        console.error('Audit log error:', error);
+        console.error('Error loading audit log:', error);
         next(error);
     }
 });
