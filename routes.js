@@ -237,13 +237,17 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
         ];
 
-        // Fetch total member count excluding specific ranks
-        const totalMembers = await User.countDocuments({
-            'roles.name': { $nin: excludedRanks }
-        });
+        // Helper function to get the actual rank
+        const getActualRank = (roles) => {
+            const validRole = roles.find(role => !excludedRanks.includes(role.name));
+            return validRole ? validRole.name : 'No valid rank assigned';
+        };
 
-        // Fetch all members with pagination and exclude specific ranks
-        const users = await User.find({ 'roles.name': { $nin: excludedRanks } })
+        // Fetch total member count (all users for pagination)
+        const totalMembers = await User.countDocuments();
+
+        // Fetch all members with pagination
+        const users = await User.find()
             .skip(skip)
             .limit(limit)
             .populate({
@@ -264,10 +268,10 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             return map;
         }, {});
 
-        // Format members with placement data
+        // Format members with placement and filtered rank data
         const formattedMembers = users.map(user => ({
             username: user.username,
-            highestRole: (user.roles || [])[0]?.name || 'No role assigned',
+            highestRole: getActualRank(user.roles || []),
             xp: user.xp || 0,
             placement: placementMap[user.username] || 'Not Assigned'
         }));
@@ -293,6 +297,7 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
         next(err);
     }
 });
+
 
 // Add filter route
 router.get('/members/filter', isAuthenticated, async (req, res) => {
