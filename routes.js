@@ -311,7 +311,7 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
 
         // Specific rank filter
         if (specificRank) {
-            query['roles.name'] = specificRank;
+            delete query['roles.name'];
         }
 
         // Status filter (using last login)
