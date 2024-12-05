@@ -242,25 +242,22 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             'roles.name': { $nin: excludedRanks }
         });
 
-        // Fetch all members with pagination and exclude specific ranks
-        const users = await User.find()
+        // Fetch all members with pagination
+        const users = await User.find({ 'roles.name': { $nin: excludedRanks } })
+            .skip(skip)
+            .limit(limit)
             .populate({
                 path: 'roles',
                 select: 'name'
-            })
-            .skip(skip)
-            .limit(limit);
+            });
 
-        // Filter roles dynamically in the backend
-        const validUsers = users.map(user => {
-            const validRole = (user.roles || []).find(role => !excludedRanks.includes(role.name));
-            return {
-                username: user.username,
-                highestRole: validRole ? validRole.name : 'No valid rank assigned',
-                xp: user.xp || 0,
-                placement: 'Not Assigned' // Will be overridden later
-            };
-        });
+        // Filter valid roles
+        const formatValidRole = (roles) => {
+            if (!roles || roles.length === 0) return 'No role assigned';
+            return roles
+                .map(role => role.name)
+                .find(name => !excludedRanks.includes(name)) || 'No role assigned';
+        };
 
         // Fetch the latest placements for all members
         const placements = await Placement.aggregate([
@@ -275,9 +272,11 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
             return map;
         }, {});
 
-        // Attach placement data
-        const formattedMembers = validUsers.map(user => ({
-            ...user,
+        // Format members with placement data
+        const formattedMembers = users.map(user => ({
+            username: user.username,
+            highestRole: formatValidRole(user.roles),
+            xp: user.xp || 0,
             placement: placementMap[user.username] || 'Not Assigned'
         }));
 
