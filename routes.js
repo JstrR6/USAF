@@ -298,11 +298,7 @@ router.get('/members', isAuthenticated, async (req, res, next) => {
 router.get('/members/filter', isAuthenticated, async (req, res) => {
     try {
         const { username, rank, specificRank, placement, status } = req.query;
-        let query = { 'roles.name': { $nin: [
-            'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
-            'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
-            'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
-        ] } };
+        let query = {};
 
         // Username filter
         if (username) {
@@ -311,7 +307,14 @@ router.get('/members/filter', isAuthenticated, async (req, res) => {
 
         // Specific rank filter
         if (specificRank) {
-            delete query['roles.name'];
+            query['roles.name'] = specificRank;
+        } else {
+            // If no specific rank is selected, exclude certain ranks
+            query['roles.name'] = { $nin: [
+                'Commissioned Officers', 'General Grade Officers', 'Field Grade Officers',
+                'Company Grade Officers', 'Enlisted Personnel', 'Senior Non-Commissioned Officers',
+                'Non-Commissioned Officers', 'Enlisted', 'Donor', '@everyone'
+            ] };
         }
 
         // Status filter (using last login)
