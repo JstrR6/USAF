@@ -70,38 +70,17 @@
             color: white;
         }
 
-        .note p {
-            margin: 0.5rem 0;
+        ul {
+            list-style: none;
+            padding: 0;
         }
 
-        .add-note-form {
+        ul li {
+            padding: 10px 15px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 1rem;
-            margin-top: 2rem;
-            color: white;
-        }
-
-        .add-note-form input, .add-note-form textarea, .add-note-form select, .add-note-form button {
-            display: block;
-            width: 100%;
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 5px;
             border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
             color: white;
-        }
-
-        .add-note-form button {
-            background: #4299e1;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .add-note-form button:hover {
-            background: #3182ce;
         }
     </style>
 </head>
@@ -176,61 +155,7 @@
                         <p>Rank: ${profile.currentRank}</p>
                         <p>XP: ${profile.user.xp}</p>
                         <p>Placement: ${profile.placement}</p>
-                        <h4>Notes</h4>
-                        ${
-                            profile.notes.length > 0
-                                ? profile.notes
-                                    .map(
-                                        (note) => `
-                                <div class="note">
-                                    <p><strong>Type:</strong> ${note.noteType}</p>
-                                    <p><strong>Content:</strong> ${note.content}</p>
-                                    <p><small>Added By: ${note.addedBy}</small></p>
-                                    <p><small>Date: ${new Date(note.dateAdded).toLocaleString()}</small></p>
-                                </div>
-                            `
-                                    )
-                                    .join('')
-                                : '<p>No notes available.</p>'
-                        }
-                        ${
-                            profile.isOfficer
-                                ? `
-                                <div class="add-note-form">
-                                    <h4>Add a Note</h4>
-                                    <select id="noteType">
-                                        <option value="Info">Info</option>
-                                        <option value="Warning">Warning</option>
-                                    </select>
-                                    <textarea id="noteContent" placeholder="Enter note content"></textarea>
-                                    <button id="addNoteBtn">Add Note</button>
-                                </div>
-                            `
-                                : ''
-                        }
                     `;
-
-                    if (profile.isOfficer) {
-                        document.getElementById('addNoteBtn').addEventListener('click', async () => {
-                            const noteType = document.getElementById('noteType').value;
-                            const content = document.getElementById('noteContent').value;
-                            try {
-                                const res = await fetch('/members/notes/add', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ username, noteType, content }),
-                                });
-                                const result = await res.json();
-                                if (result.success) {
-                                    alert('Note added successfully!');
-                                } else {
-                                    alert('Failed to add note: ' + result.message);
-                                }
-                            } catch (err) {
-                                console.error('Error adding note:', err);
-                            }
-                        });
-                    }
                 } else {
                     profileContainer.innerHTML = `<p>${data.message}</p>`;
                 }

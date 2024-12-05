@@ -223,14 +223,19 @@ router.get('/profile', isAuthenticated, async (req, res) => {
     }
 });
 
-// Basic - Show all members
-router.get('/members', isAuthenticated, async (req, res) => {
+// Route to render the Members page
+router.get('/members', (req, res) => {
+    res.render('members', { title: 'Members' });
+});
+
+// Route to fetch the full members list as JSON
+router.get('/members/list', async (req, res) => {
     try {
-        const members = await User.find().select('username').sort({ username: 1 });
+        const members = await User.find({}, 'username');
         res.json({ success: true, members });
     } catch (error) {
-        console.error('Error fetching members list:', error);
-        res.status(500).json({ success: false, error: 'Internal Server Error' });
+        console.error('Error fetching members:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch members' });
     }
 });
 
