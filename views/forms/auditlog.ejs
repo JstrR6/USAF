@@ -32,14 +32,52 @@
             border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0.5rem 0;
+        }
+
         .filters-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1rem;
-            border-radius: 10px;
         }
 
         .filter-input {
@@ -75,6 +113,7 @@
             padding: 0.25rem 0.75rem;
             border-radius: 15px;
             font-size: 0.875rem;
+            color: white;
         }
 
         .status-badge {
@@ -83,16 +122,82 @@
             font-size: 0.875rem;
         }
 
+        .export-btn {
+            background: #48bb78;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .export-btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
         .no-activities {
             text-align: center;
             color: white;
             margin: 2rem 0;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+        }
+
+        .page-btn.active {
+            background: #4299e1;
         }
     </style>
 </head>
 <body>
     <div class="audit-container">
         <h2>Audit Log</h2>
+
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div>Total Activities</div>
+                <div class="stat-number"><%= stats.total %></div>
+            </div>
+            <div class="stat-card">
+                <div>Trainings</div>
+                <div class="stat-number"><%= stats.byType.Training %></div>
+            </div>
+            <div class="stat-card">
+                <div>Promotions</div>
+                <div class="stat-number"><%= stats.byType.Promotion %></div>
+            </div>
+            <div class="stat-card">
+                <div>Awards</div>
+                <div class="stat-number"><%= stats.byType.Award %></div>
+            </div>
+        </div>
+
+        <a href="/forms/auditlog/export" class="export-btn">Export to CSV</a>
 
         <div class="filters-container">
             <input type="text" id="searchInput" placeholder="Search username/details..." class="filter-input">
@@ -117,7 +222,38 @@
         </div>
 
         <div class="activities-list">
-            <!-- Activities will be dynamically populated here -->
+            <% if (activities && activities.length > 0) { %>
+                <% activities.forEach(activity => { %>
+                    <div class="activity-card">
+                        <div class="activity-row">
+                            <strong>Type:</strong>
+                            <span class="type-badge"><%= activity.type %></span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Username:</strong>
+                            <span><%= activity.username %></span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Details:</strong>
+                            <span><%= activity.details %></span>
+                        </div>
+                        <div class="activity-row">
+                            <strong>Date:</strong>
+                            <span><%= new Date(activity.date).toLocaleString() %></span>
+                        </div>
+                        <% if (activity.approvedBy) { %>
+                            <div class="activity-row">
+                                <strong>Approved By:</strong>
+                                <span><%= activity.approvedBy %></span>
+                            </div>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="no-activities">
+                    <h3>No activities found.</h3>
+                </div>
+            <% } %>
         </div>
     </div>
 
