@@ -20,7 +20,7 @@
             padding: 2rem;
         }
 
-        .forms-container {
+        .members-container {
             background: rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
             border-radius: 10px;
@@ -30,6 +30,26 @@
             margin: 0 auto;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
             border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
 
         .section-title {
@@ -62,30 +82,64 @@
             display: block;
         }
 
-        .note {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 5px;
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
             padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            color: black;
+        }
+
+        .note {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
             margin-bottom: 1rem;
             color: white;
         }
 
-        ul {
-            list-style: none;
-            padding: 0;
+        .add-note-form {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+            color: white;
         }
 
-        ul li {
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            margin-bottom: 5px;
+        .add-note-form input,
+        .add-note-form textarea,
+        .add-note-form select,
+        .add-note-form button {
+            width: 100%;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
             color: white;
+        }
+
+        .add-note-form button {
+            background: #4299e1;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-note-form button:hover {
+            background: #3182ce;
         }
     </style>
 </head>
 <body>
-    <div class="forms-container">
+    <div class="members-container">
+        <nav class="nav-menu">
+            <a href="/dashboard" class="nav-item">Dashboard</a>
+            <a href="/members" class="nav-item">Members</a>
+            <a href="/forms" class="nav-item">Forms</a>
+            <a href="/profile" class="nav-item">Profile</a>
+        </nav>
+
         <h1 class="section-title">Members</h1>
         <button class="button" id="show-list">Full Members List</button>
         <button class="button" id="show-lookup">Member Lookup</button>
@@ -126,6 +180,7 @@
                     data.members.forEach(member => {
                         const li = document.createElement('li');
                         li.textContent = member.username;
+                        li.className = 'user-info';
                         membersUl.appendChild(li);
                     });
                 }
@@ -155,6 +210,23 @@
                         <p>Rank: ${profile.currentRank}</p>
                         <p>XP: ${profile.user.xp}</p>
                         <p>Placement: ${profile.placement}</p>
+                        <h4>Notes</h4>
+                        ${
+                            profile.notes.length > 0
+                                ? profile.notes
+                                    .map(
+                                        (note) => `
+                                <div class="note">
+                                    <p><strong>Type:</strong> ${note.noteType}</p>
+                                    <p><strong>Content:</strong> ${note.content}</p>
+                                    <p><small>Added By: ${note.addedBy}</small></p>
+                                    <p><small>Date: ${new Date(note.dateAdded).toLocaleString()}</small></p>
+                                </div>
+                            `
+                                    )
+                                    .join('')
+                                : '<p>No notes available.</p>'
+                        }
                     `;
                 } else {
                     profileContainer.innerHTML = `<p>${data.message}</p>`;
