@@ -1229,17 +1229,21 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        // Fetch activities (trainings, promotions, etc.)
-        const [trainings, promotions, awards, placements] = await Promise.all([
+        // Include UserNote in the initial fetch
+        const [trainings, promotions, awards, placements, notes] = await Promise.all([
             Training.find().sort({ dateSubmitted: -1 }),
             Promotion.find().sort({ dateSubmitted: -1 }),
             Award.find().sort({ dateSubmitted: -1 }),
-            Placement.find().sort({ dateSubmitted: -1 })
+            Placement.find().sort({ dateSubmitted: -1 }),
+            UserNote.find().sort({ dateAdded: -1 })  // Added notes
         ]);
 
         const allActivities = [
             ...trainings.map(t => ({
                 type: 'Training',
+                trainer: t.trainer,           // Added for displaying trainer
+                trainees: t.trainees.join(', '),
+                xpAmount: t.xpAmount,        // Added for displaying XP amount
                 username: t.trainees.join(', '),
                 performedBy: t.trainer,
                 details: `XP Amount: ${t.xpAmount}`,
@@ -1249,6 +1253,10 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
             ...promotions.map(p => ({
                 type: 'Promotion',
                 username: p.username,
+                currentRank: p.currentRank,   // Added for displaying ranks
+                promotionRank: p.promotionRank,
+                reason: p.reason,             // Added for displaying reason
+                submittedBy: p.submittedBy,
                 performedBy: p.submittedBy,
                 details: `${p.currentRank} → ${p.promotionRank}`,
                 status: p.status,
@@ -1259,6 +1267,8 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
             ...awards.map(a => ({
                 type: 'Award',
                 username: a.username,
+                submittedBy: a.submittedBy,
+                reason: a.reason,             // Added for displaying reason
                 performedBy: a.submittedBy,
                 details: a.award,
                 status: a.status,
@@ -1267,12 +1277,21 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
             ...placements.map(p => ({
                 type: 'Placement',
                 username: p.username,
+                placementRank: p.placementRank, // Added for displaying rank
                 performedBy: p.submittedBy,
                 details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
                 status: p.status,
                 date: p.dateSubmitted
+            })),
+            ...notes.map(n => ({
+                type: 'Note',
+                username: n.username,
+                performedBy: n.addedBy,
+                details: n.content,
+                status: n.noteType,
+                date: n.dateAdded
             }))
-        ];
+        ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
         // Calculate statistics
         const stats = {
@@ -1281,12 +1300,13 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
                 Training: trainings.length,
                 Promotion: promotions.length,
                 Award: awards.length,
-                Placement: placements.length
+                Placement: placements.length,
+                Note: notes.length
             },
             byStatus: {
-                Pending: allActivities.filter(a => a.status === 'Pending').length,
-                Approved: allActivities.filter(a => a.status === 'Approved').length,
-                Rejected: allActivities.filter(a => a.status === 'Rejected').length
+                Pending: allActivities.filter(a => a.status === 'pending').length,
+                Approved: allActivities.filter(a => a.status === 'approved').length,
+                Rejected: allActivities.filter(a => a.status === 'rejected').length
             }
         };
 
@@ -1294,11 +1314,10 @@ router.get('/forms/auditlog', isAuthenticated, isOfficer, async (req, res, next)
         const paginatedActivities = allActivities.slice(skip, skip + limit);
         const totalPages = Math.ceil(allActivities.length / limit);
 
-        // Render the audit log page
         res.render('forms/auditlog', {
             title: 'Audit Log',
             activities: paginatedActivities,
-            stats: stats || { total: 0, byType: {}, byStatus: {} }, // Default empty stats
+            stats,
             currentPage: page,
             totalPages
         });
@@ -1396,12 +1415,13 @@ router.post('/forms/auditlog/filter', isAuthenticated, isOfficer, async (req, re
 // Export route for audit log
 router.get('/forms/auditlog/export', isAuthenticated, isOfficer, async (req, res) => {
     try {
-        // Get data from all schemas
-        const [trainings, promotions, awards, placements] = await Promise.all([
+        // Get data from all schemas including notes
+        const [trainings, promotions, awards, placements, notes] = await Promise.all([
             Training.find(),
             Promotion.find(),
             Award.find(),
-            Placement.find()
+            Placement.find(),
+            UserNote.find()
         ]);
 
         // Combine all activities
@@ -1439,6 +1459,14 @@ router.get('/forms/auditlog/export', isAuthenticated, isOfficer, async (req, res
                 details: `${p.currentPlacement || 'None'} → ${p.newPlacement} as ${p.placementRank}`,
                 status: p.status,
                 date: p.dateSubmitted
+            })),
+            ...notes.map(n => ({
+                type: 'Note',
+                username: n.username,
+                performedBy: n.addedBy,
+                details: n.content,
+                status: n.noteType,
+                date: n.dateAdded
             }))
         ].sort((a, b) => b.date - a.date);
 
