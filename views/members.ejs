@@ -15,21 +15,21 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(45deg, #612ccd 0%, #541170 99%, #8902ff 100%);
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #fff;
             min-height: 100vh;
             padding: 2rem;
         }
 
         .members-container {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
             border-radius: 10px;
             padding: 2rem;
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
         }
 
         .nav-menu {
@@ -39,23 +39,25 @@
         }
 
         .nav-item {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
             padding: 0.75rem 1.5rem;
             border-radius: 5px;
-            color: white;
+            color: #fff;
             text-decoration: none;
             transition: all 0.3s ease;
+            font-weight: 600;
         }
 
         .nav-item:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
         }
 
         .section-title {
-            color: white;
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
         }
 
         .button {
@@ -67,6 +69,8 @@
             border-radius: 5px;
             cursor: pointer;
             margin-right: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
         .button:hover {
@@ -75,27 +79,29 @@
 
         .list, .lookup {
             margin-top: 20px;
-            display: none;
-        }
-
-        .list.active, .lookup.active {
-            display: block;
         }
 
         .user-info {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
             padding: 1rem;
-            border-radius: 5px;
+            border-radius: 10px;
             margin-bottom: 1rem;
-            color: black;
+            color: #fff;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .note {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
             padding: 1rem;
-            border-radius: 5px;
+            border-radius: 10px;
             margin-bottom: 1rem;
-            color: white;
+            color: #fff;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .add-note-form {
@@ -103,19 +109,19 @@
             padding: 1rem;
             border-radius: 10px;
             margin-top: 2rem;
-            color: white;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .add-note-form input,
         .add-note-form textarea,
-        .add-note-form select,
         .add-note-form button {
             width: 100%;
             margin-bottom: 1rem;
             padding: 0.75rem;
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
         }
 
@@ -124,10 +130,21 @@
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-weight: 600;
         }
 
         .add-note-form button:hover {
             background: #3182ce;
+        }
+
+        .search-container input {
+            padding: 0.75rem;
+            width: 100%;
+            margin-bottom: 1rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
         }
     </style>
 </head>
@@ -155,7 +172,16 @@
             <h2 class="section-title">Member Lookup</h2>
             <input type="text" id="lookup-input" placeholder="Enter username">
             <button class="button" id="lookup-btn">Search</button>
-            <div id="profile-container"></div>
+            <div id="officer-controls" style="display: none;">
+                <button class="button" id="add-note-btn">Add Note</button>
+            </div>
+        </div>
+
+        <!-- Add Note Form -->
+        <div class="add-note-form" id="add-note-form" style="display: none;">
+            <h3>Add Note</h3>
+            <textarea id="note-content" placeholder="Enter note content"></textarea>
+            <button class="button" id="submit-note-btn">Submit Note</button>
         </div>
     </div>
 
@@ -167,11 +193,27 @@
         const membersUl = document.getElementById('members-ul');
         const lookupInput = document.getElementById('lookup-input');
         const lookupBtn = document.getElementById('lookup-btn');
-        const profileContainer = document.getElementById('profile-container');
+        const officerControls = document.getElementById('officer-controls');
+        const addNoteForm = document.getElementById('add-note-form');
+        const submitNoteBtn = document.getElementById('submit-note-btn');
+
+        // Fetch officer status from server
+        let isOfficer = false;
+        async function checkOfficerStatus() {
+            try {
+                const res = await fetch('/api/check-officer');
+                const data = await res.json();
+                isOfficer = data.isOfficer;
+            } catch (err) {
+                console.error('Error checking officer status:', err);
+            }
+        }
+
+        checkOfficerStatus();
 
         showListBtn.addEventListener('click', async () => {
-            membersList.classList.add('active');
-            memberLookup.classList.remove('active');
+            membersList.style.display = 'block';
+            memberLookup.style.display = 'none';
             membersUl.innerHTML = '';
             try {
                 const res = await fetch('/members/list');
@@ -190,50 +232,50 @@
         });
 
         showLookupBtn.addEventListener('click', () => {
-            membersList.classList.remove('active');
-            memberLookup.classList.add('active');
-            profileContainer.innerHTML = '';
+            membersList.style.display = 'none';
+            memberLookup.style.display = 'block';
         });
 
         lookupBtn.addEventListener('click', async () => {
             const username = lookupInput.value.trim();
             if (!username) return;
 
-            profileContainer.innerHTML = '<p>Loading...</p>';
+            const url = `/members/lookup/${username}`;
+            window.open(url, '_blank');
+
+            if (isOfficer) {
+                officerControls.style.display = 'block';
+            }
+        });
+
+        // Show Add Note Form
+        document.getElementById('add-note-btn').addEventListener('click', () => {
+            addNoteForm.style.display = 'block';
+        });
+
+        // Submit Note
+        submitNoteBtn.addEventListener('click', async () => {
+            const noteContent = document.getElementById('note-content').value.trim();
+            if (!noteContent) {
+                alert('Note content cannot be empty.');
+                return;
+            }
+
             try {
-                const res = await fetch(`/members/lookup/${username}`);
+                const res = await fetch('/api/add-note', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: lookupInput.value.trim(), note: noteContent }),
+                });
                 const data = await res.json();
                 if (data.success) {
-                    const profile = data.profile;
-                    profileContainer.innerHTML = `
-                        <h3>${profile.user.username}</h3>
-                        <p>Rank: ${profile.currentRank}</p>
-                        <p>XP: ${profile.user.xp}</p>
-                        <p>Placement: ${profile.placement}</p>
-                        <h4>Notes</h4>
-                        ${
-                            profile.notes.length > 0
-                                ? profile.notes
-                                    .map(
-                                        (note) => `
-                                <div class="note">
-                                    <p><strong>Type:</strong> ${note.noteType}</p>
-                                    <p><strong>Content:</strong> ${note.content}</p>
-                                    <p><small>Added By: ${note.addedBy}</small></p>
-                                    <p><small>Date: ${new Date(note.dateAdded).toLocaleString()}</small></p>
-                                </div>
-                            `
-                                    )
-                                    .join('')
-                                : '<p>No notes available.</p>'
-                        }
-                    `;
+                    alert('Note added successfully!');
+                    addNoteForm.style.display = 'none';
                 } else {
-                    profileContainer.innerHTML = `<p>${data.message}</p>`;
+                    alert('Failed to add note.');
                 }
             } catch (err) {
-                console.error('Error fetching profile:', err);
-                profileContainer.innerHTML = '<p>Error fetching profile.</p>';
+                console.error('Error adding note:', err);
             }
         });
     </script>
