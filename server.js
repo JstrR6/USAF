@@ -23,6 +23,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(flash());
+require('./routes')(app);
 
 // Session setup
 app.use(session({
