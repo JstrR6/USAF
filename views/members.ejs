@@ -177,56 +177,22 @@
 
         <div class="filters-container">
             <input type="text" id="usernameFilter" placeholder="Search by username" class="filter-input">
-            <select id="rankFilter" class="filter-input">
-                <option value="">All Ranks</option>
-                <option value="asc">Rank (Lowest to Highest)</option>
-                <option value="desc">Rank (Highest to Lowest)</option>
-                <!-- Populated with actual ranks -->
-            </select>
             <select id="specificRankFilter" class="filter-input">
                 <option value="">Select Specific Rank</option>
-                <!-- Populated with all ranks -->
+                <!-- Populated with valid ranks -->
             </select>
             <select id="placementFilter" class="filter-input">
                 <option value="">All Placements</option>
                 <!-- Populated with all placements -->
             </select>
-            <select id="statusFilter" class="filter-input">
-                <option value="">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-            </select>
         </div>
 
         <div class="members-grid">
-            <% members.forEach(member => { %>
-                <div class="member-card">
-                    <div class="member-info">
-                        <div class="member-details">
-                            <div><strong>Username:</strong> <%= member.username %></div>
-                            <div><strong>Rank:</strong> <%= member.highestRole %></div>
-                            <div><strong>Placement:</strong> <%= member.placement || 'Not Assigned' %></div>
-                            <div><strong>XP:</strong> <%= member.xp %></div>
-                        </div>
-                        <% if (isOfficer) { %>
-                            <div class="member-actions">
-                                <button class="action-btn" onclick="viewNotes('<%= member.username %>')">
-                                    Notes
-                                </button>
-                            </div>
-                        <% } %>
-                    </div>
-                </div>
-            <% }); %>
+            <!-- Member cards will be dynamically inserted here -->
         </div>
 
         <div class="pagination">
-            <% for(let i = 1; i <= totalPages; i++) { %>
-                <button class="page-btn <%= currentPage === i ? 'active' : '' %>" 
-                        onclick="goToPage('<%= i %>')">
-                    <%= i %>
-                </button>
-            <% } %>
+            <!-- Pagination buttons will be dynamically inserted here -->
         </div>
     </div>
 
@@ -256,53 +222,78 @@
         // Page Load Init
         document.addEventListener('DOMContentLoaded', async () => {
             await loadFilterOptions();
-            applyFilters(); 
+            await loadMembers(); 
             setupEventListeners();
         });
 
         // Load Filter Options
         async function loadFilterOptions() {
-            try {
-                const ranks = [
-                    'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
-                    'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
-                    'Master Sergeant', 'First Sergeant', 'Sergeant Major', 
-                    'Command Sergeant Major', 'Sergeant Major of the Army',
-                    'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
-                    'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
-                    'Lieutenant General', 'General', 'General of the Army'
-                ];
+            const validRanks = [
+                'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
+                'Sergeant', 'Staff Sergeant', 'Sergeant First Class',
+                'Master Sergeant', 'First Sergeant', 'Sergeant Major', 
+                'Command Sergeant Major', 'Sergeant Major of the Army',
+                'Second Lieutenant', 'First Lieutenant', 'Captain', 'Major',
+                'Lieutenant Colonel', 'Colonel', 'Brigadier General', 'Major General',
+                'Lieutenant General', 'General', 'General of the Army'
+            ];
 
-                const rankSelect = document.getElementById('specificRankFilter');
-                ranks.forEach(rank => {
-                    const option = document.createElement('option');
-                    option.value = rank;
-                    option.textContent = rank;
-                    rankSelect.appendChild(option);
-                });
+            const rankSelect = document.getElementById('specificRankFilter');
+            validRanks.forEach(rank => {
+                const option = document.createElement('option');
+                option.value = rank;
+                option.textContent = rank;
+                rankSelect.appendChild(option);
+            });
 
-                const response = await fetch('/members/filter-options');
-                const data = await response.json();
-                
-                const placementSelect = document.getElementById('placementFilter');
-                data.units.forEach(unit => {
-                    const option = document.createElement('option');
-                    option.value = unit;
-                    option.textContent = unit;
-                    placementSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading filter options:', error);
+            // Load placements
+            const response = await fetch('/members/filter-options');
+            const data = await response.json();
+            const placementSelect = document.getElementById('placementFilter');
+            data.units.forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit;
+                option.textContent = unit;
+                placementSelect.appendChild(option);
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('usernameFilter').addEventListener('input', debounce(loadMembers, 300));
+            document.getElementById('specificRankFilter').addEventListener('change', loadMembers);
+            document.getElementById('placementFilter').addEventListener('change', loadMembers);
+        }
+
+        async function loadMembers() {
+            const filters = {
+                username: document.getElementById('usernameFilter').value,
+                specificRank: document.getElementById('specificRankFilter').value || '',
+                placement: document.getElementById('placementFilter').value || ''
+            };
+
+            const params = new URLSearchParams(filters);
+            const response = await fetch(`/members/filter?${params}`);
+            const data = await response.json();
+
+            if (data.success) {
+                updateMembersDisplay(data.members);
             }
         }
 
-        // Event Listeners Setup
-        function setupEventListeners() {
-            document.getElementById('usernameFilter').addEventListener('input', debounce(applyFilters, 300));
-            document.getElementById('rankFilter').addEventListener('change', applyFilters);
-            document.getElementById('specificRankFilter').addEventListener('change', applyFilters);
-            document.getElementById('placementFilter').addEventListener('change', applyFilters);
-            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        function updateMembersDisplay(members) {
+            const grid = document.querySelector('.members-grid');
+            grid.innerHTML = members.map(member => `
+                <div class="member-card">
+                    <div class="member-info">
+                        <div class="member-details">
+                            <div><strong>Username:</strong> ${member.username}</div>
+                            <div><strong>Rank:</strong> ${member.highestRole}</div>
+                            <div><strong>Placement:</strong> ${member.placement || 'Not Assigned'}</div>
+                            <div><strong>XP:</strong> ${member.xp}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         // Notes Functions
@@ -390,25 +381,6 @@
             } catch (error) {
                 console.error('Error fetching filtered members:', error);
             }
-        }
-
-        function updateMembersDisplay(members) {
-            const grid = document.querySelector('.members-grid');
-            grid.innerHTML = members.map(member => `
-                <div class="member-card">
-                    <div class="member-info">
-                        <div class="member-details">
-                            <div><strong>Username:</strong> ${member.username}</div>
-                            <div><strong>Rank:</strong> ${member.highestRole}</div>
-                            <div><strong>Placement:</strong> ${member.placement || 'Not Assigned'}</div>
-                            <div><strong>XP:</strong> ${member.xp}</div>
-                        </div>
-                        <div class="member-actions">
-                            <button class="action-btn" onclick="viewNotes('${member.username}')">Notes</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
         }
 
         // Utility Functions
