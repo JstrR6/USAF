@@ -344,12 +344,12 @@
     
         function updateActivitiesDisplay(activities) {
             const container = document.querySelector('.activities-list');
-            
+
             if (activities.length === 0) {
                 container.innerHTML = '<div class="no-activities"><h3>No activities found</h3></div>';
                 return;
             }
-    
+
             container.innerHTML = activities.map(activity => `
                 <div class="activity-card">
                     <div class="activity-row">
