@@ -224,7 +224,7 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 });
 
 // Basic - Show all members
-router.get('/members', isAuthenticated, setSessionRolesMiddleware, async (req, res, next) => {
+router.get('/members', isAuthenticated, setSessionRoles, async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
