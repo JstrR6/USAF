@@ -53,35 +53,67 @@
         }
 
         .search-container {
+            display: flex;
+            gap: 1rem;
             margin-bottom: 2rem;
         }
 
-        .profile-container {
-            display: none;
-            margin-top: 2rem;
+        .search-container input {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: black;
         }
 
-        .user-info {
+        .search-container button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            background: #4299e1;
+            color: rgba(115, 115, 115, 0.545);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-container button:hover {
+            background: #3182ce;
+        }
+
+        .list-container, .profile-container {
+            display: none;
+        }
+
+        .list-container ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .list-container li {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+            color: black;
+        }
+
+        .user-info, .notes-section {
             margin-bottom: 1.5rem;
+        }
+
+        .user-info, .notes-section {
             background: rgba(255, 255, 255, 0.1);
             padding: 1rem;
             border-radius: 5px;
         }
 
-        .note-container {
-            margin-top: 1rem;
+        .note {
             background: rgba(255, 255, 255, 0.1);
             padding: 1rem;
             border-radius: 5px;
-        }
-
-        .note-container button {
-            margin-top: 1rem;
-        }
-
-        .form-container {
-            margin-top: 1.5rem;
-            display: none;
+            margin-bottom: 0.5rem;
         }
 
         textarea {
@@ -95,6 +127,7 @@
         }
 
         button {
+            margin-top: 1rem;
             background: #4299e1;
             color: white;
             padding: 0.75rem 1.5rem;
@@ -102,18 +135,10 @@
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 1rem;
         }
 
         button:hover {
             background: #3182ce;
-        }
-
-        .note {
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
         }
     </style>
 </head>
@@ -127,8 +152,14 @@
         </nav>
 
         <div class="search-container">
-            <input type="text" id="search-username" placeholder="Search by username" />
+            <button id="show-full-list">Full Members List</button>
+            <input type="text" id="search-username" placeholder="Search for a member by username">
             <button id="search-btn">Search</button>
+        </div>
+
+        <div id="list-container" class="list-container">
+            <h3>Full Members List</h3>
+            <ul id="members-list"></ul>
         </div>
 
         <div id="profile-container" class="profile-container">
@@ -139,13 +170,13 @@
                 <p><strong>Placement:</strong> <span id="placement-display"></span></p>
             </div>
 
-            <div id="notes-section" class="note-container">
+            <div id="notes-section" class="notes-section">
                 <h4>Notes</h4>
                 <div id="notes-list"></div>
                 <button id="add-note-btn" style="display: none;">Add Note</button>
             </div>
 
-            <div id="note-form" class="form-container">
+            <div id="note-form" class="notes-section" style="display: none;">
                 <textarea id="note-content" placeholder="Enter note content"></textarea>
                 <button id="submit-note-btn">Submit Note</button>
             </div>
@@ -153,7 +184,9 @@
     </div>
 
     <script>
+        const showFullListBtn = document.getElementById('show-full-list');
         const searchBtn = document.getElementById('search-btn');
+        const listContainer = document.getElementById('list-container');
         const profileContainer = document.getElementById('profile-container');
         const usernameDisplay = document.getElementById('username-display');
         const rankDisplay = document.getElementById('rank-display');
@@ -162,26 +195,47 @@
         const notesList = document.getElementById('notes-list');
         const addNoteBtn = document.getElementById('add-note-btn');
         const noteForm = document.getElementById('note-form');
-        const submitNoteBtn = document.getElementById('submit-note-btn');
         const noteContent = document.getElementById('note-content');
-        const searchUsername = document.getElementById('search-username');
+        const submitNoteBtn = document.getElementById('submit-note-btn');
 
-        let currentUsername = null;
+        async function fetchFullMembersList() {
+            try {
+                const res = await fetch('/members');
+                const data = await res.json();
+                const validRanks = [
+                    'Citizen', 'Private', 'Private First Class', 'Specialist', 'Corporal',
+                    'Sergeant', 'Staff Sergeant', 'Sergeant First Class', 'Master Sergeant',
+                    'First Sergeant', 'Sergeant Major', 'Command Sergeant Major',
+                    'Sergeant Major of the Army', 'Second Lieutenant', 'First Lieutenant',
+                    'Captain', 'Major', 'Lieutenant Colonel', 'Colonel', 'Brigadier General',
+                    'Major General', 'Lieutenant General', 'General', 'General of the Army'
+                ];
+
+                const membersList = data.members.filter(member =>
+                    validRanks.includes(member.rank)
+                );
+
+                const listEl = document.getElementById('members-list');
+                listEl.innerHTML = membersList.map(
+                    member => `<li>${member.username}</li>`
+                ).join('');
+                listContainer.style.display = 'block';
+                profileContainer.style.display = 'none';
+            } catch (err) {
+                console.error('Error fetching full members list:', err);
+            }
+        }
 
         async function fetchProfile(username) {
             try {
                 const res = await fetch(`/members/lookup/${username}`);
                 const data = await res.json();
-
                 if (data.success) {
-                    const profile = data.profile;
-                    currentUsername = profile.user.username;
-
-                    usernameDisplay.textContent = profile.user.username;
-                    rankDisplay.textContent = profile.currentRank;
-                    xpDisplay.textContent = profile.user.xp || 0;
-                    placementDisplay.textContent = profile.placement || 'None';
-                    notesList.innerHTML = profile.notes
+                    usernameDisplay.textContent = data.profile.user.username;
+                    rankDisplay.textContent = data.profile.currentRank;
+                    xpDisplay.textContent = data.profile.user.xp || 0;
+                    placementDisplay.textContent = data.profile.placement || 'None';
+                    notesList.innerHTML = data.profile.notes
                         .map(note => `
                             <div class="note">
                                 <p><strong>Type:</strong> ${note.noteType}</p>
@@ -191,13 +245,9 @@
                             </div>
                         `)
                         .join('');
-                    
+                    if (data.profile.isOfficer) addNoteBtn.style.display = 'block';
+                    listContainer.style.display = 'none';
                     profileContainer.style.display = 'block';
-
-                    // Show Add Note button if user is an officer
-                    if (profile.isOfficer) {
-                        addNoteBtn.style.display = 'block';
-                    }
                 } else {
                     alert(data.message || 'User not found.');
                 }
@@ -207,44 +257,11 @@
         }
 
         searchBtn.addEventListener('click', () => {
-            const username = searchUsername.value.trim();
+            const username = document.getElementById('search-username').value.trim();
             if (username) fetchProfile(username);
         });
 
-        addNoteBtn.addEventListener('click', () => {
-            noteForm.style.display = 'block';
-        });
-
-        submitNoteBtn.addEventListener('click', async () => {
-            const content = noteContent.value.trim();
-
-            if (!content || !currentUsername) {
-                alert('Note content is required.');
-                return;
-            }
-
-            try {
-                const res = await fetch('/members/notes/add', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: currentUsername,
-                        noteType: 'General',
-                        content: content,
-                    }),
-                });
-
-                const data = await res.json();
-                if (data.success) {
-                    alert('Note added successfully!');
-                    fetchProfile(currentUsername); // Refresh profile
-                } else {
-                    alert(data.message || 'Failed to add note.');
-                }
-            } catch (err) {
-                console.error('Error adding note:', err);
-            }
-        });
+        showFullListBtn.addEventListener('click', fetchFullMembersList);
     </script>
 </body>
 </html>
