@@ -374,8 +374,8 @@ router.post('/forms/training/submit', isAuthenticated, async (req, res) => {
             success: true, 
             needsApproval,
             message: needsApproval ? 
-                'Training submitted and pending approval (XP ≥ 10)' : 
-                'Training submitted and XP awarded successfully'
+                'Training submitted: Pending Approval' : 
+                'Training submitted: Approved'
         });
 
     } catch (error) {
